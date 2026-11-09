@@ -5,3 +5,4 @@ dist/
 research/*.bin
 research/*.out
 research/*.jsonl
+research/*.npz

@@ -39,6 +39,7 @@ def main() -> None:
         known.update(match.group().decode("utf-16le") for match in utf16_pattern.finditer(data))
 
     keyword = re.compile(
+        sys.argv[2] if len(sys.argv) > 2 else
         r"eap|ekos|oscill|marker|chunk|retry|retries|timeout|baud|uart|serial|lupin|"
         r"firmware|illum|lumin|flicker|calibr|rate|command|packet|frame|device|"
         r"start|stop|ping|rpc|health|reset|bootloader|context|channel|read|write",
@@ -61,6 +62,9 @@ def main() -> None:
                 break
             base = int(mbi.BaseAddress or 0)
             size = int(mbi.RegionSize)
+            if len(sys.argv) > 2 and base >= 0x60000000:
+                address = base + size
+                continue
             if (
                 mbi.State == MEM_COMMIT
                 and not (mbi.Protect & PAGE_GUARD)

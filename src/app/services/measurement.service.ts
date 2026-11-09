@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, signal } from "@angular/core";
 import { dominantFrequencies, powerSpectrum, signalStats, type SampleArray, type SignalStats, type SpectrumBin } from "../../lib/analysis";
 import type { DemoChunk } from "../../lib/demo";
+import { LowPassFilter } from "../../lib/filter";
 import { downloadText, Recording } from "../../lib/recording";
 import { DemoService } from "./demo.service";
 import { SerialService } from "./serial.service";
@@ -13,6 +14,7 @@ export class MeasurementService {
   private readonly buffer = new Float32Array(2048);
   private sampleCount = 0;
   private lastRecorded = 0;
+  private lowPass = new LowPassFilter(2000);
 
   readonly stats = signal<SignalStats>({ minimum: 0, maximum: 0, mean: 0, flickerPercent: 0 });
   readonly samples = signal<SampleArray>([]);
@@ -20,6 +22,7 @@ export class MeasurementService {
   readonly sampleRate = signal(2000);
   readonly running = signal(false);
   readonly correction = signal(1);
+  readonly filterEnabled = signal(true);
   readonly comment = signal("");
   readonly recordActive = signal(false);
   readonly recordCount = signal(0);
@@ -45,6 +48,7 @@ export class MeasurementService {
     await this.serial.connect();
     this.demo.stop();
     this.sampleRate.set(6000);
+    this.lowPass = new LowPassFilter(6000);
     this.running.set(true);
   }
 
@@ -55,6 +59,7 @@ export class MeasurementService {
 
   togglePause(): void {
     if (this.connected()) {
+      if (!this.running()) this.lowPass.reset();
       this.running.update((running) => !running);
       return;
     }
@@ -70,6 +75,11 @@ export class MeasurementService {
 
   setCorrection(value: number): void {
     if (Number.isFinite(value) && value > 0) this.correction.set(value);
+  }
+
+  setFilterEnabled(enabled: boolean): void {
+    this.filterEnabled.set(enabled);
+    this.lowPass.reset();
   }
 
   toggleRecording(): void {
@@ -94,19 +104,21 @@ export class MeasurementService {
     const corrected = this.correction() === 1
       ? chunk.samples
       : chunk.samples.map((value) => value * this.correction());
+    const processed = this.filterEnabled() ? this.lowPass.process(corrected) : corrected;
 
-    if (corrected.length >= this.buffer.length) {
-      this.buffer.set(corrected.slice(-this.buffer.length));
+    if (processed.length >= this.buffer.length) {
+      this.buffer.set(processed.slice(-this.buffer.length));
       this.sampleCount = this.buffer.length;
     } else {
-      this.buffer.copyWithin(0, corrected.length);
-      this.buffer.set(corrected, this.buffer.length - corrected.length);
-      this.sampleCount = Math.min(this.buffer.length, this.sampleCount + corrected.length);
+      this.buffer.copyWithin(0, processed.length);
+      this.buffer.set(processed, this.buffer.length - processed.length);
+      this.sampleCount = Math.min(this.buffer.length, this.sampleCount + processed.length);
     }
 
     const visible = this.buffer.slice(this.buffer.length - this.sampleCount);
-    const stats = signalStats(visible);
-    const spectrum = powerSpectrum(visible, chunk.sampleRate);
+    const analysisSamples = processed.length > this.buffer.length ? processed : visible;
+    const stats = signalStats(analysisSamples);
+    const spectrum = powerSpectrum(analysisSamples, chunk.sampleRate);
     const dominant = dominantFrequencies(spectrum);
     this.samples.set(visible);
     this.sampleRate.set(chunk.sampleRate);

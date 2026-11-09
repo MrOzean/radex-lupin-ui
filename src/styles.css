@@ -101,6 +101,8 @@ h1 span { color: #7e918c; }
 .field select, .field input, .field textarea { width: 100%; color: #d4ded9; border: 1px solid var(--border); outline: none; border-radius: 7px; background: #101a1c; padding: 10px; font-size: 11px; }
 .field select:focus, .field input:focus, .field textarea:focus { border-color: #69875c; }
 .field textarea { resize: vertical; min-height: 68px; }
+.checkbox-field { display: flex; align-items: center; gap: 8px; margin: 8px 20px 12px; color: #9bada6; font-size: 10px; }
+.checkbox-field input { accent-color: var(--lime); width: 14px; height: 14px; }
 .input-with-action { display: flex; }
 .input-with-action input { border-radius: 7px 0 0 7px; }
 .input-with-action button { width: 42px; border: 1px solid var(--border); border-left: 0; border-radius: 0 7px 7px 0; background: #1a2729; color: var(--lime); font-size: 11px; }

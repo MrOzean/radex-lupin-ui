@@ -30,13 +30,9 @@ export function signalStats(samples: SampleArray): SignalStats {
   return { minimum, maximum, mean, flickerPercent };
 }
 
-/** In-place iterative radix-2 FFT. Input contains interleaved real/imaginary values. */
-export function fft(values: Float64Array): void {
+/** In-place iterative radix-2 FFT over interleaved real/imaginary values. */
+function radix2Fft(values: Float64Array): void {
   const n = values.length / 2;
-  if (n < 2 || (n & (n - 1)) !== 0) {
-    throw new Error("FFT size must be a power of two");
-  }
-
   for (let i = 1, j = 0; i < n; i++) {
     let bit = n >> 1;
     for (; j & bit; bit >>= 1) j ^= bit;
@@ -71,43 +67,118 @@ export function fft(values: Float64Array): void {
   }
 }
 
+/** Arbitrary-length real FFT using Bluestein's chirp-z transform. */
+export function realFft(input: Float64Array): Float64Array {
+  const n = input.length;
+  if (n < 2) throw new Error("FFT input is too short");
+  const output = new Float64Array(n * 2);
+
+  if ((n & (n - 1)) === 0) {
+    for (let i = 0; i < n; i++) output[i * 2] = input[i];
+    radix2Fft(output);
+    return output;
+  }
+
+  const convolutionSize = 2 ** Math.ceil(Math.log2(n * 2 - 1));
+  const a = new Float64Array(convolutionSize * 2);
+  const b = new Float64Array(convolutionSize * 2);
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * ((i * i) % (2 * n))) / n;
+    const cosine = Math.cos(angle);
+    const sine = Math.sin(angle);
+    a[i * 2] = input[i] * cosine;
+    a[i * 2 + 1] = -input[i] * sine;
+    b[i * 2] = cosine;
+    b[i * 2 + 1] = sine;
+    if (i > 0) {
+      b[(convolutionSize - i) * 2] = cosine;
+      b[(convolutionSize - i) * 2 + 1] = sine;
+    }
+  }
+
+  radix2Fft(a);
+  radix2Fft(b);
+  for (let i = 0; i < convolutionSize; i++) {
+    const ar = a[i * 2];
+    const ai = a[i * 2 + 1];
+    const br = b[i * 2];
+    const bi = b[i * 2 + 1];
+    a[i * 2] = ar * br - ai * bi;
+    a[i * 2 + 1] = ar * bi + ai * br;
+  }
+
+  // Inverse FFT by conjugation, forward transform and conjugation/scaling.
+  for (let i = 1; i < a.length; i += 2) a[i] = -a[i];
+  radix2Fft(a);
+  for (let i = 0; i < a.length; i += 2) {
+    a[i] /= convolutionSize;
+    a[i + 1] = -a[i + 1] / convolutionSize;
+  }
+
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * ((i * i) % (2 * n))) / n;
+    const cosine = Math.cos(angle);
+    const sine = Math.sin(angle);
+    const real = a[i * 2];
+    const imaginary = a[i * 2 + 1];
+    output[i * 2] = real * cosine + imaginary * sine;
+    output[i * 2 + 1] = imaginary * cosine - real * sine;
+  }
+  return output;
+}
+
+/**
+ * Normalized spectrum compatible with RadexLight's EsEapMath.normalizeAndExtremaFind.
+ * Each FFT magnitude is normalized by the sum of all FFT magnitudes. Unlike a
+ * peak-normalized display, the largest peak is not forced to 0 dB.
+ */
 export function powerSpectrum(
   samples: SampleArray,
   sampleRate: number,
-  maxFrequency = 500,
+  maxFrequency = sampleRate / 2,
 ): SpectrumBin[] {
-  const count = 2 ** Math.floor(Math.log2(Math.min(samples.length, 4096)));
+  const count = samples.length;
   if (count < 4) return [];
 
-  const start = samples.length - count;
   let sum = 0;
-  for (let i = start; i < samples.length; i++) sum += samples[i];
+  for (let i = 0; i < count; i++) sum += samples[i];
   const mean = sum / count;
-  const data = new Float64Array(count * 2);
+  const input = new Float64Array(count);
   for (let i = 0; i < count; i++) {
     const window = 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (count - 1));
-    data[i * 2] = (samples[start + i] - mean) * window;
+    input[i] = (samples[i] - mean) * window;
   }
-  fft(data);
+
+  const transformed = realFft(input);
+  const magnitudes = new Float64Array(count);
+  let total = 0;
+  for (let i = 0; i < count; i++) {
+    const magnitude = Math.hypot(transformed[i * 2], transformed[i * 2 + 1]);
+    magnitudes[i] = magnitude;
+    total += magnitude;
+  }
+  if (total === 0) return [];
 
   const bins: SpectrumBin[] = [];
   const maxBin = Math.min(count / 2, Math.ceil((maxFrequency * count) / sampleRate));
   for (let i = 1; i <= maxBin; i++) {
-    const real = data[i * 2];
-    const imaginary = data[i * 2 + 1];
-    const power = (real * real + imaginary * imaginary) / (count * count);
+    const normalized = magnitudes[i] / total;
     bins.push({
       frequency: (i * sampleRate) / count,
-      decibels: Math.max(-100, 10 * Math.log10(Math.max(power, 1e-10))),
+      decibels: Math.max(-100, 20 * Math.log10(Math.max(normalized, 1e-5))),
     });
   }
-  const peak = Math.max(...bins.map((bin) => bin.decibels), -100);
-  return bins.map((bin) => ({ ...bin, decibels: Math.max(-100, bin.decibels - peak) }));
+  return bins;
 }
 
 export function dominantFrequencies(spectrum: readonly SpectrumBin[], count = 3): SpectrumBin[] {
   return spectrum
-    .filter((bin) => bin.decibels >= -40)
+    .filter((bin, index) => {
+      if (bin.decibels < -40) return false;
+      const previous = spectrum[index - 1]?.decibels ?? -Infinity;
+      const next = spectrum[index + 1]?.decibels ?? -Infinity;
+      return bin.decibels >= previous && bin.decibels >= next;
+    })
     .sort((a, b) => b.decibels - a.decibels)
     .slice(0, count);
 }

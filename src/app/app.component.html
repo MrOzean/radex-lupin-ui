@@ -75,7 +75,7 @@
           kind="spectrum"
           title="Спектр пульсаций"
           description="Амплитуда частотных составляющих · легенда кликабельна"
-          meta="дБ · 0–500 Гц"
+          [meta]="'дБ · 0–' + (measurement.sampleRate() / 2) + ' Гц'"
           [bins]="measurement.spectrum()" />
       </div>
 
@@ -84,6 +84,7 @@
           <header class="panel-header"><div><h2>Параметры сеанса</h2><p>Настройки текущего измерения</p></div></header>
           <label class="field"><span>Тип измерения</span><select><option value="illuminance">Освещённость, лк</option><option value="luminance" disabled>Яркость, кд/м² · скоро</option></select></label>
           <label class="field"><span>Корректирующий множитель</span><div class="input-with-action"><input type="number" min="0.001" max="100" step="0.001" [ngModel]="measurement.correction()" (ngModelChange)="measurement.setCorrection($event)"/><button type="button" title="Сбросить" (click)="measurement.setCorrection(1)">1×</button></div></label>
+          <label class="checkbox-field"><input type="checkbox" [ngModel]="measurement.filterEnabled()" (ngModelChange)="measurement.setFilterEnabled($event)"/><span>Цифровой НЧ-фильтр · 500 Гц</span></label>
           <label class="field"><span>Комментарий к измерению</span><textarea rows="3" placeholder="Например: рабочее место у окна" [ngModel]="measurement.comment()" (ngModelChange)="measurement.comment.set($event)"></textarea></label>
           <div class="session-info"><span>Источник</span><strong>{{ measurement.sourceName() }}</strong></div>
           <div class="session-info"><span>Частота дискретизации</span><strong>{{ measurement.sampleRate() }} Гц</strong></div>

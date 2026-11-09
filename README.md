@@ -8,6 +8,8 @@
 
 Подробный отчёт с доказательствами и границами текущих знаний: [docs/research/radexlight-protocol.ru.md](docs/research/radexlight-protocol.ru.md).
 
+Текущее состояние и план следующих этапов: [docs/project-status.ru.md](docs/project-status.ru.md).
+
 ## Запуск
 
 ```powershell

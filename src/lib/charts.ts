@@ -109,6 +109,11 @@ abstract class BaseChart {
     this.chart.dispatchAction({ type: "dataZoom", start: 0, end: 100 });
   }
 
+  dispose(): void {
+    this.observer.disconnect();
+    this.chart.dispose();
+  }
+
   exportImage(format: "png" | "svg"): void {
     const filename = `${this.exportName}-${new Date().toISOString().replaceAll(":", "-")}.${format}`;
     if (format === "png") {

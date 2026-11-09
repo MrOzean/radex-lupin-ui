@@ -122,7 +122,7 @@ h1 span { color: #7e918c; }
 .terminal-dialog > header { display: flex; align-items: center; justify-content: space-between; padding: 20px; border-bottom: 1px solid var(--border); }
 .terminal-dialog h2 { margin: 0; font-size: 18px; }
 .terminal-note { margin: 15px 20px; color: #8fa19b; font-size: 11px; line-height: 1.5; }
-#terminal-log { height: 365px; overflow: auto; margin: 0 20px; padding: 14px; background: #091113; border: 1px solid var(--border); border-radius: 8px; color: #9fc7b7; font: 11px/1.6 Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
+.terminal-log { display: block; height: 365px; overflow: auto; margin: 0 20px; padding: 14px; background: #091113; border: 1px solid var(--border); border-radius: 8px; color: #9fc7b7; font: 11px/1.6 Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
 .send-form { display: flex; gap: 8px; margin: 12px 20px; }
 .send-form input { min-width: 0; flex: 1; background: #0b1416; color: var(--text); border: 1px solid var(--border); border-radius: 7px; padding: 0 12px; font-family: Consolas, monospace; font-size: 12px; }
 .terminal-dialog > footer { display: flex; justify-content: space-between; align-items: center; padding: 0 20px; color: var(--muted); font-size: 10px; }

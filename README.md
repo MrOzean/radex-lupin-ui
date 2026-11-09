@@ -24,11 +24,20 @@ npm run preview
 
 Для подключения нужен Chrome/Edge и HTTPS или `localhost`. Web Serial недоступен в Firefox/Safari; на iOS потребуется другой транспорт.
 
+## Технологии
+
+- **Angular 22.2**, standalone-компоненты, signals и zoneless change detection;
+- **ECharts 6** — легенда, tooltip, масштабирование, pan, экспорт PNG/SVG;
+- Web Serial API, TypeScript 6, RxJS.
+
 ## Структура
 
-- `src/lib/serial.ts` — Web Serial, фильтр LUPIN `ABBA:E011`, RX/TX HEX-журнал;
+- `src/app/services/measurement.service.ts` — состояние измерения, пауза, статистика, FFT и запись;
+- `src/app/services/serial.service.ts` — Web Serial, пакеты LUPIN и ограниченный журнал;
+- `src/app/services/demo.service.ts` — виртуальный источник;
+- `src/app/components/chart-panel.component.ts` — жизненный цикл и управление ECharts;
+- `src/app/components/terminal-dialog.component.ts` — диагностический HEX-терминал;
+- `src/lib/lupin.ts` — инкрементальный разбор пакетов `OSCILLOSCOPE`;
 - `src/lib/analysis.ts` — статистика, коэффициент пульсации, FFT, доминирующие частоты;
-- `src/lib/charts.ts` — Canvas-графики;
-- `src/lib/demo.ts` — виртуальный источник, не связанный с прибором;
 - `research/` — инструменты read-only анализа официального ПО;
 - `docs/research/` — результаты исследования.

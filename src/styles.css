@@ -95,6 +95,14 @@ h1 span { color: #7e918c; }
 .panel-actions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
 .chart-action { border: 1px solid var(--border); border-radius: 5px; background: #172325; color: #8fa39c; padding: 5px 7px; font-size: 9px; }
 .chart-action:hover { color: var(--lime); border-color: #52674f; }
+.view-switch { display: flex; border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+.view-switch button { border: 0; border-right: 1px solid var(--border); background: #121d1f; color: #788e86; padding: 5px 7px; font-size: 9px; }
+.view-switch button:last-child { border-right: 0; }
+.view-switch button.active { color: #172012; background: var(--mint); }
+.chart-backdrop { position: fixed; inset: 0; z-index: 90; background: rgba(3, 8, 9, .78); backdrop-filter: blur(6px); }
+.chart-panel.expanded { position: fixed; inset: 16px; z-index: 91; display: flex; flex-direction: column; background: #111c1e; box-shadow: 0 20px 80px #000a; }
+.chart-panel.expanded .chart-wrap { flex: 1; height: auto; min-height: 0; }
+.expand-action { color: var(--mint); }
 .session-panel { padding-bottom: 10px; }
 .field { display: block; padding: 9px 20px; }
 .field > span { display: block; color: #8a9d97; font-size: 10px; margin-bottom: 7px; }

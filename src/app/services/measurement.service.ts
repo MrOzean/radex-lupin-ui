@@ -22,6 +22,8 @@ export class MeasurementService {
   readonly sampleRate = signal(2000);
   readonly running = signal(false);
   readonly correction = signal(1);
+  readonly measurementType = signal<"illuminance" | "luminance">("illuminance");
+  readonly unit = computed(() => this.measurementType() === "illuminance" ? "лк" : "кд/м²");
   readonly filterEnabled = signal(true);
   readonly comment = signal("");
   readonly recordActive = signal(false);
@@ -77,6 +79,10 @@ export class MeasurementService {
     if (Number.isFinite(value) && value > 0) this.correction.set(value);
   }
 
+  setMeasurementType(type: "illuminance" | "luminance"): void {
+    this.measurementType.set(type);
+  }
+
   setFilterEnabled(enabled: boolean): void {
     this.filterEnabled.set(enabled);
     this.lowPass.reset();
@@ -96,7 +102,7 @@ export class MeasurementService {
     if (this.recorder.count === 0) return;
     const comment = this.comment().trim();
     const prefix = comment ? `# ${comment}\r\n` : "";
-    downloadText(prefix + this.recorder.toCsv(), `lupin-${new Date().toISOString().replaceAll(":", "-")}.csv`);
+    downloadText(prefix + this.recorder.toCsv(this.unit()), `lupin-${new Date().toISOString().replaceAll(":", "-")}.csv`);
   }
 
   private processChunk(chunk: DemoChunk): void {

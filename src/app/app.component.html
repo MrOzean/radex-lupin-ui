@@ -39,15 +39,15 @@
 
     <section class="metrics" aria-label="Текущие показания">
       <article class="metric-card metric-main">
-        <div class="metric-label"><span>ОСВЕЩЁННОСТЬ</span><span class="live-tag"><i></i>{{ measurement.running() ? 'LIVE' : 'PAUSE' }}</span></div>
-        <div class="metric-value"><strong>{{ measurement.stats().mean.toFixed(1) }}</strong><span>лк</span></div>
+        <div class="metric-label"><span>{{ measurement.measurementType() === 'illuminance' ? 'ОСВЕЩЁННОСТЬ' : 'ЯРКОСТЬ' }}</span><span class="live-tag"><i></i>{{ measurement.running() ? 'LIVE' : 'PAUSE' }}</span></div>
+        <div class="metric-value"><strong>{{ measurement.stats().mean.toFixed(1) }}</strong><span>{{ measurement.unit() }}</span></div>
         <div class="comfort-track"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        <div class="metric-footer"><span>Интегральное среднее</span><strong>{{ measurement.stats().mean.toFixed(1) }} лк</strong></div>
+        <div class="metric-footer"><span>Интегральное среднее</span><strong>{{ measurement.stats().mean.toFixed(1) }} {{ measurement.unit() }}</strong></div>
       </article>
       <article class="metric-card">
         <div class="metric-label"><span>КОЭФФИЦИЕНТ ПУЛЬСАЦИИ</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h3l3-8 4 16 3-12 3 8h4"/></svg></div>
         <div class="metric-value"><strong>{{ measurement.stats().flickerPercent.toFixed(1) }}</strong><span>%</span></div>
-        <div class="metric-footer"><span>Диапазон</span><strong>{{ measurement.stats().minimum.toFixed(1) }}…{{ measurement.stats().maximum.toFixed(1) }} лк</strong></div>
+        <div class="metric-footer"><span>Диапазон</span><strong>{{ measurement.stats().minimum.toFixed(1) }}…{{ measurement.stats().maximum.toFixed(1) }} {{ measurement.unit() }}</strong></div>
       </article>
       <article class="metric-card">
         <div class="metric-label"><span>ДОМИНИРУЮЩАЯ ЧАСТОТА</span><span class="small-orbit"></span></div>
@@ -70,7 +70,9 @@
           description="Колесо — масштаб · перетаскивание — движение · наведение — значения"
           meta="до 6000 Гц · 2048 точек"
           [samples]="measurement.samples()"
-          [sampleRate]="measurement.sampleRate()" />
+          [sampleRate]="measurement.sampleRate()"
+          [unit]="measurement.unit()"
+          (unitChange)="measurement.setMeasurementType($event === 'лк' ? 'illuminance' : 'luminance')" />
         <app-chart-panel
           kind="spectrum"
           title="Спектр пульсаций"
@@ -82,7 +84,6 @@
       <aside class="side-column">
         <article class="panel session-panel">
           <header class="panel-header"><div><h2>Параметры сеанса</h2><p>Настройки текущего измерения</p></div></header>
-          <label class="field"><span>Тип измерения</span><select><option value="illuminance">Освещённость, лк</option><option value="luminance" disabled>Яркость, кд/м² · скоро</option></select></label>
           <label class="field"><span>Корректирующий множитель</span><div class="input-with-action"><input type="number" min="0.001" max="100" step="0.001" [ngModel]="measurement.correction()" (ngModelChange)="measurement.setCorrection($event)"/><button type="button" title="Сбросить" (click)="measurement.setCorrection(1)">1×</button></div></label>
           <label class="checkbox-field"><input type="checkbox" [ngModel]="measurement.filterEnabled()" (ngModelChange)="measurement.setFilterEnabled($event)"/><span>Цифровой НЧ-фильтр · 500 Гц</span></label>
           <label class="field"><span>Комментарий к измерению</span><textarea rows="3" placeholder="Например: рабочее место у окна" [ngModel]="measurement.comment()" (ngModelChange)="measurement.comment.set($event)"></textarea></label>

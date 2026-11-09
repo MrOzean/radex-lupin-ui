@@ -35,8 +35,9 @@ export class Recording {
     if (this.active) this.rows.push(row);
   }
 
-  toCsv(): string {
-    const header = "timestamp;illuminance_lux;flicker_percent;dominant_frequency_hz";
+  toCsv(unit = "лк"): string {
+    const valueColumn = unit === "лк" ? "illuminance_lux" : "luminance_cd_m2";
+    const header = `timestamp;${valueColumn};flicker_percent;dominant_frequency_hz`;
     const lines = this.rows.map((row) =>
       [row.timestamp, row.illuminanceLux.toFixed(3), row.flickerPercent.toFixed(3), row.dominantFrequencyHz.toFixed(2)].join(";"),
     );

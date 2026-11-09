@@ -4,6 +4,9 @@ export const LUPIN_MARKER = new TextEncoder().encode("OSCILLOSCOPE");
 export const LUPIN_SAMPLES_PER_PACKET = 6000;
 export const LUPIN_SAMPLE_RATE = 6000;
 export const LUPIN_PACKET_BYTES = LUPIN_MARKER.length + LUPIN_SAMPLES_PER_PACKET * 4;
+// LUPIN specification: illuminance 10–200000 lux, luminance 3–70000 cd/m².
+// Zero is allowed for dark measurements; the upper bound is only a corruption guard.
+export const LUPIN_MAX_REASONABLE_SAMPLE = 200_000;
 
 function findMarker(buffer: Uint8Array, start = 0): number {
   outer: for (let i = start; i <= buffer.length - LUPIN_MARKER.length; i++) {
@@ -46,7 +49,7 @@ export class LupinStreamParser extends EventTarget {
       let valid = true;
       for (let i = 0; i < samples.length; i++) {
         const value = view.getFloat32(i * 4, true);
-        if (!Number.isFinite(value) || value < 0) {
+        if (!Number.isFinite(value) || value < 0 || value > LUPIN_MAX_REASONABLE_SAMPLE) {
           valid = false;
           break;
         }

@@ -1,5 +1,5 @@
 import * as echarts from "echarts/core";
-import { LineChart } from "echarts/charts";
+import { BarChart, CandlestickChart, LineChart } from "echarts/charts";
 import {
   DataZoomInsideComponent,
   DataZoomSliderComponent,
@@ -14,6 +14,8 @@ import { downloadText } from "./recording";
 
 echarts.use([
   LineChart,
+  BarChart,
+  CandlestickChart,
   GridComponent,
   LegendComponent,
   TooltipComponent,
@@ -34,20 +36,21 @@ const COLORS = {
 interface TooltipItem {
   seriesName: string;
   marker: string;
-  value: [number, number];
+  value: number[];
 }
 
-function tooltipHtml(params: unknown, xUnit: string, yUnit: string): string {
+function tooltipHtml(params: unknown, xUnit: string, yUnit: string, yOffset = 0): string {
   const items = params as TooltipItem[];
   if (!Array.isArray(items) || items.length === 0) return "";
-  const rows = items.map((item) =>
-    `<div style="display:flex;gap:18px;justify-content:space-between;margin-top:5px">` +
-    `<span>${item.marker}${item.seriesName}</span><strong>${item.value[1].toFixed(2)} ${yUnit}</strong></div>`,
-  ).join("");
+  const rows = items.map((item) => {
+    const value = item.value.length >= 5 ? item.value[2] : item.value[1] - yOffset;
+    return `<div style="display:flex;gap:18px;justify-content:space-between;margin-top:5px">` +
+      `<span>${item.marker}${item.seriesName}</span><strong>${value.toFixed(2)} ${yUnit}</strong></div>`;
+  }).join("");
   return `<div>Время/частота: <strong>${items[0].value[0].toFixed(3)} ${xUnit}</strong></div>${rows}`;
 }
 
-function baseOption(): EChartsCoreOption {
+function baseOption(xDecimals = 2): EChartsCoreOption {
   return {
     animation: false,
     backgroundColor: "transparent",
@@ -88,6 +91,7 @@ function baseOption(): EChartsCoreOption {
         handleStyle: { color: "#70d6c2", borderColor: "#70d6c2" },
         moveHandleStyle: { color: "#5b756c" },
         textStyle: { color: COLORS.text, fontSize: 9 },
+        labelFormatter: (value: number) => Number(value.toFixed(xDecimals)).toString(),
         dataBackground: { lineStyle: { color: "#50675e" }, areaStyle: { color: "rgba(112, 214, 194, .05)" } },
         selectedDataBackground: { lineStyle: { color: COLORS.average }, areaStyle: { color: "rgba(112, 214, 194, .1)" } },
       },
@@ -107,6 +111,10 @@ abstract class BaseChart {
 
   resetZoom(): void {
     this.chart.dispatchAction({ type: "dataZoom", start: 0, end: 100 });
+  }
+
+  resize(): void {
+    this.chart.resize();
   }
 
   dispose(): void {
@@ -146,7 +154,7 @@ export class SignalChart extends BaseChart {
     super(host, "lupin-signal");
   }
 
-  update(samples: SampleArray, sampleRate: number): void {
+  update(samples: SampleArray, sampleRate: number, unit = "лк"): void {
     const points: [number, number][] = [];
     for (let i = 0; i < samples.length; i++) points.push([i / sampleRate, samples[i]]);
     const stats = signalStats(samples);
@@ -161,14 +169,14 @@ export class SignalChart extends BaseChart {
         nameGap: 26,
         min: 0,
         max: Math.max(1 / sampleRate, (samples.length - 1) / sampleRate),
-        axisLabel: { color: COLORS.text, fontSize: 10 },
+        axisLabel: { color: COLORS.text, fontSize: 10, formatter: (value: number) => value.toFixed(2) },
         nameTextStyle: { color: COLORS.text, fontSize: 9 },
         axisLine: { lineStyle: { color: "#354640" } },
         splitLine: { lineStyle: { color: COLORS.grid } },
       },
       yAxis: {
         type: "value",
-        name: "лк",
+        name: unit,
         scale: true,
         axisLabel: { color: COLORS.text, fontSize: 10 },
         nameTextStyle: { color: COLORS.text },
@@ -200,19 +208,67 @@ export class SignalChart extends BaseChart {
     } as EChartsCoreOption);
 
     this.chart.setOption({
-      tooltip: { formatter: (params: unknown) => tooltipHtml(params, "с", "лк") },
+      tooltip: { formatter: (params: unknown) => tooltipHtml(params, "с", unit) },
     });
   }
 }
 
+export type SpectrumView = "line" | "bars" | "candles";
+
 export class SpectrumChart extends BaseChart {
+  private bins: readonly SpectrumBin[] = [];
+  private view: SpectrumView = "bars";
+
   constructor(host: HTMLElement) {
     super(host, "lupin-spectrum");
   }
 
+  setView(view: SpectrumView): void {
+    this.view = view;
+    this.update(this.bins);
+  }
+
   update(bins: readonly SpectrumBin[]): void {
+    this.bins = bins;
     const points = bins.map((bin) => [bin.frequency, bin.decibels] as [number, number]);
-    const threshold = points.map(([frequency]) => [frequency, -40] as [number, number]);
+    const bars = this.view === "bars";
+    const valueOffset = bars ? 100 : 0;
+    const displayPoints = points.map(([frequency, decibels]) => [frequency, decibels + valueOffset]);
+    const threshold = points.map(([frequency]) => [frequency, -40 + valueOffset]);
+    const candles = bins.map((bin, index) => {
+      const open = bins[index - 1]?.decibels ?? bin.decibels;
+      const next = bins[index + 1]?.decibels ?? bin.decibels;
+      return [
+        bin.frequency,
+        open,
+        bin.decibels,
+        Math.min(open, bin.decibels, next),
+        Math.max(open, bin.decibels, next),
+      ];
+    });
+
+    const spectrumSeries = this.view === "candles" ? {
+      name: "Спектр",
+      type: "candlestick",
+      data: candles,
+      barWidth: "65%",
+      itemStyle: {
+        color: "rgba(112, 214, 194, .6)",
+        color0: "rgba(200, 247, 107, .5)",
+        borderColor: COLORS.average,
+        borderColor0: COLORS.line,
+      },
+    } : {
+      name: "Спектр",
+      type: bars ? "bar" : "line",
+      data: displayPoints,
+      showSymbol: false,
+      barWidth: "70%",
+      lineStyle: { color: COLORS.average, width: 1.5 },
+      itemStyle: { color: COLORS.average },
+      areaStyle: bars ? undefined : { color: "rgba(112, 214, 194, 0.08)" },
+      emphasis: { disabled: true },
+    };
 
     this.chart.setOption({
       ...baseOption(),
@@ -222,8 +278,8 @@ export class SpectrumChart extends BaseChart {
         nameLocation: "middle",
         nameGap: 26,
         min: 0,
-        max: Math.max(1, bins.at(-1)?.frequency ?? 500),
-        axisLabel: { color: COLORS.text, fontSize: 10 },
+        max: Math.max(1, bins.at(-1)?.frequency ?? 3000),
+        axisLabel: { color: COLORS.text, fontSize: 10, formatter: (value: number) => value.toFixed(0) },
         nameTextStyle: { color: COLORS.text, fontSize: 9 },
         axisLine: { lineStyle: { color: "#354640" } },
         splitLine: { lineStyle: { color: COLORS.grid } },
@@ -231,23 +287,18 @@ export class SpectrumChart extends BaseChart {
       yAxis: {
         type: "value",
         name: "дБ",
-        min: -100,
-        max: 0,
-        axisLabel: { color: COLORS.text, fontSize: 10 },
+        min: bars ? 0 : -100,
+        max: bars ? 100 : 0,
+        axisLabel: {
+          color: COLORS.text,
+          fontSize: 10,
+          formatter: (value: number) => String(value - valueOffset),
+        },
         nameTextStyle: { color: COLORS.text },
         splitLine: { lineStyle: { color: COLORS.grid } },
       },
       series: [
-        {
-          name: "Спектр",
-          type: "line",
-          data: points,
-          showSymbol: false,
-          lineStyle: { color: COLORS.average, width: 1.5 },
-          itemStyle: { color: COLORS.average },
-          areaStyle: { color: "rgba(112, 214, 194, 0.08)" },
-          emphasis: { disabled: true },
-        },
+        spectrumSeries,
         {
           name: "Порог −40 дБ",
           type: "line",
@@ -261,7 +312,7 @@ export class SpectrumChart extends BaseChart {
     } as EChartsCoreOption);
 
     this.chart.setOption({
-      tooltip: { formatter: (params: unknown) => tooltipHtml(params, "Гц", "дБ") },
+      tooltip: { formatter: (params: unknown) => tooltipHtml(params, "Гц", "дБ", valueOffset) },
     });
   }
 }

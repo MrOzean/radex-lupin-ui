@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.vite/
+.angular/
+research/*.bin
+research/*.out
+research/*.jsonl

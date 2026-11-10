@@ -102,10 +102,17 @@ function baseOption(xDecimals = 2): EChartsCoreOption {
 abstract class BaseChart {
   protected readonly chart: EChartsType;
   private readonly observer: ResizeObserver;
+  private resizeFrame: number | null = null;
 
   constructor(host: HTMLElement, private readonly exportName: string) {
     this.chart = echarts.init(host, undefined, { renderer: "canvas" });
-    this.observer = new ResizeObserver(() => this.chart.resize());
+    this.observer = new ResizeObserver(() => {
+      if (this.resizeFrame !== null) cancelAnimationFrame(this.resizeFrame);
+      this.resizeFrame = requestAnimationFrame(() => {
+        this.resizeFrame = null;
+        this.chart.resize();
+      });
+    });
     this.observer.observe(host);
   }
 
@@ -119,6 +126,7 @@ abstract class BaseChart {
 
   dispose(): void {
     this.observer.disconnect();
+    if (this.resizeFrame !== null) cancelAnimationFrame(this.resizeFrame);
     this.chart.dispose();
   }
 
@@ -224,7 +232,9 @@ export class SpectrumChart extends BaseChart {
   }
 
   setView(view: SpectrumView): void {
+    if (this.view === view) return;
     this.view = view;
+    this.chart.clear();
     this.update(this.bins);
   }
 

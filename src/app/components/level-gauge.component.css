@@ -6,6 +6,9 @@
 .gauge-marker .gauge-marker-center { fill: #e8eeea; stroke: none; }
 .gauge-scale { display: flex; justify-content: space-between; gap: 8px; margin-top: 5px; color: #647972; font-size: 8px; font-variant-numeric: tabular-nums; }
 
+:host-context(html[data-theme="light"]) .gauge-scale { color: #60766b; }
+:host-context(html[data-theme="light"]) .gauge-track { border-color: rgba(34, 65, 52, .16); box-shadow: inset 0 1px 3px #21352a18; }
+
 @media (prefers-reduced-motion: reduce) {
   .gauge-marker { transition: none; }
 }

@@ -10,6 +10,8 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+type AppTheme = "dark" | "light";
+
 @Component({
   selector: "app-root",
   imports: [FormsModule, ChartPanelComponent, LevelGaugeComponent, TerminalDialogComponent],
@@ -21,11 +23,13 @@ export class AppComponent {
   readonly serial = this.measurement.serial;
   readonly toast = signal("");
   readonly installAvailable = signal(false);
+  readonly theme = signal<AppTheme>(localStorage.getItem("lupin-theme") === "light" ? "light" : "dark");
   private readonly terminal = viewChild(TerminalDialogComponent);
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
   private installPromptEvent: BeforeInstallPromptEvent | null = null;
 
   constructor() {
+    this.applyTheme();
     window.addEventListener("beforeinstallprompt", (event) => {
       event.preventDefault();
       this.installPromptEvent = event as BeforeInstallPromptEvent;
@@ -39,6 +43,11 @@ export class AppComponent {
     this.serial.connectionLoss.subscribe((reason) => {
       this.showToast(`LUPIN отключён: ${reason}. Уже записанные данные сохранены.`);
     });
+  }
+
+  toggleTheme(): void {
+    this.theme.update((theme) => theme === "dark" ? "light" : "dark");
+    this.applyTheme();
   }
 
   async installApp(): Promise<void> {
@@ -110,6 +119,12 @@ export class AppComponent {
 
   formatDate(value: string): string {
     return new Date(value).toLocaleString("ru-RU");
+  }
+
+  private applyTheme(): void {
+    document.documentElement.dataset.theme = this.theme();
+    localStorage.setItem("lupin-theme", this.theme());
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", this.theme() === "light" ? "#eef3ef" : "#101a1c");
   }
 
   showToast(message: string): void {

@@ -8,6 +8,13 @@
       <span class="status-badge" [class.connected]="serial.state() === 'connected' && measurement.streamState() === 'live'" [class.demo]="measurement.demo.running() && measurement.streamState() === 'live'" [class.archive]="measurement.archive()" [class.warning]="measurement.streamState() === 'waiting' || measurement.streamState() === 'stalled'">
         <span></span>{{ measurement.statusText() }}
       </span>
+      <button type="button" class="icon-button" [title]="theme() === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'" [attr.aria-label]="theme() === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'" (click)="toggleTheme()">
+        @if (theme() === 'dark') {
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M19 5l-1.5 1.5m-11 11L5 19"/></svg>
+        } @else {
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15.5A8.5 8.5 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z"/></svg>
+        }
+      </button>
       @if (installAvailable()) {
         <button type="button" class="icon-button" title="Установить приложение" aria-label="Установить приложение" (click)="installApp()">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 18v3h16v-3"/></svg>
@@ -140,6 +147,7 @@
             [sampleRate]="measurement.sampleRate()"
             [timeOffset]="measurement.archive() ? measurement.playbackPosition() : 0"
             [unit]="measurement.unit()"
+            [theme]="theme()"
             (unitChange)="measurement.setMeasurementType($event === 'лк' ? 'illuminance' : 'luminance')" />
           <app-chart-panel
             kind="spectrum"
@@ -147,7 +155,8 @@
             description="Амплитуда частотных составляющих · легенда кликабельна"
             [meta]="'дБ · 0–' + measurement.spectrumLimit() + ' Гц'"
             [bins]="measurement.spectrum()"
-            [maxFrequency]="measurement.spectrumLimit()" />
+            [maxFrequency]="measurement.spectrumLimit()"
+            [theme]="theme()" />
         } @placeholder {
           <div class="panel chart-placeholder" role="status">Загрузка графиков…</div>
         }

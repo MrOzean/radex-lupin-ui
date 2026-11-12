@@ -7,3 +7,7 @@
 .send-form { display: flex; gap: 8px; margin: 12px 20px; }
 .send-form input { min-width: 0; flex: 1; background: #0b1416; color: var(--text); border: 1px solid var(--border); border-radius: 7px; padding: 0 12px; font-family: Consolas, monospace; font-size: 12px; }
 .terminal-dialog > footer { display: flex; justify-content: space-between; align-items: center; padding: 0 20px; color: var(--muted); font-size: 10px; }
+
+:host-context(html[data-theme="light"]) .terminal-dialog { background: #f8faf8; border-color: #c5d2cb; }
+:host-context(html[data-theme="light"]) .terminal-note { color: #5f746a; }
+:host-context(html[data-theme="light"]) .send-form input { color: #253b31; background: #fff; border-color: #c5d2cb; }

@@ -15,6 +15,12 @@
 .chart-panel.expanded .chart-wrap { flex: 1; height: auto; min-height: 0; }
 .expand-action { color: var(--mint); }
 
+:host-context(html[data-theme="light"]) .chart-action { color: #52695e; background: #f3f7f3; }
+:host-context(html[data-theme="light"]) .chart-action:hover { color: #46751e; border-color: #91aa87; }
+:host-context(html[data-theme="light"]) .view-switch button { color: #5c7267; background: #f4f7f4; }
+:host-context(html[data-theme="light"]) .view-switch button.active { color: #19372d; background: #85d3bf; }
+:host-context(html[data-theme="light"]) .chart-panel.expanded { background: #f8faf8; }
+
 @media (max-width: 780px) {
   .chart-wrap { height: 240px; }
 }

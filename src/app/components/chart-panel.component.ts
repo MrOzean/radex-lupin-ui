@@ -18,6 +18,7 @@ export class ChartPanelComponent implements OnDestroy {
   readonly bins = input<readonly SpectrumBin[]>([]);
   readonly maxFrequency = input(0);
   readonly unit = input("лк");
+  readonly theme = input<"dark" | "light">("dark");
   readonly unitChange = output<"лк" | "кд/м²">();
   readonly expanded = signal(false);
   readonly spectrumView = signal<SpectrumView>("bars");
@@ -32,6 +33,7 @@ export class ChartPanelComponent implements OnDestroy {
       this.bins();
       this.maxFrequency();
       this.unit();
+      this.theme();
       this.render();
     });
     afterNextRender(() => {

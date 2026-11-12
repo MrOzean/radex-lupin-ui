@@ -25,13 +25,29 @@ echarts.use([
   SVGRenderer,
 ]);
 
-const COLORS = {
+const DARK_COLORS = {
   text: "#819590",
   grid: "rgba(154, 181, 176, 0.12)",
   line: "#c8f76b",
   average: "#70d6c2",
   threshold: "#e6b86a",
 };
+const LIGHT_COLORS = {
+  text: "#536760",
+  grid: "rgba(42, 75, 62, 0.14)",
+  line: "#5b8f28",
+  average: "#168b78",
+  threshold: "#a66c08",
+};
+const COLORS = { ...DARK_COLORS };
+
+function isLightTheme(): boolean {
+  return document.documentElement.dataset.theme === "light";
+}
+
+function syncChartTheme(): void {
+  Object.assign(COLORS, isLightTheme() ? LIGHT_COLORS : DARK_COLORS);
+}
 
 interface TooltipItem {
   seriesName: string;
@@ -51,6 +67,7 @@ function tooltipHtml(params: unknown, xUnit: string, yUnit: string, yOffset = 0)
 }
 
 function baseOption(xDecimals = 2): EChartsCoreOption {
+  syncChartTheme();
   return {
     animation: false,
     backgroundColor: "transparent",
@@ -65,9 +82,9 @@ function baseOption(xDecimals = 2): EChartsCoreOption {
     },
     tooltip: {
       trigger: "axis",
-      backgroundColor: "rgba(9, 17, 19, 0.96)",
-      borderColor: "#354640",
-      textStyle: { color: "#e8eeea", fontSize: 11 },
+      backgroundColor: isLightTheme() ? "rgba(255, 255, 255, 0.97)" : "rgba(9, 17, 19, 0.96)",
+      borderColor: isLightTheme() ? "#c5d2cb" : "#354640",
+      textStyle: { color: isLightTheme() ? "#21332c" : "#e8eeea", fontSize: 11 },
       axisPointer: { type: "cross", lineStyle: { color: "#61776f" }, crossStyle: { color: "#61776f" } },
     },
     dataZoom: [
@@ -140,7 +157,7 @@ abstract class BaseChart {
     const filename = `${this.exportName}-${new Date().toISOString().replaceAll(":", "-")}.${format}`;
     if (format === "png") {
       const link = document.createElement("a");
-      link.href = this.chart.getDataURL({ type: "png", pixelRatio: 2, backgroundColor: "#131e20" });
+      link.href = this.chart.getDataURL({ type: "png", pixelRatio: 2, backgroundColor: isLightTheme() ? "#ffffff" : "#131e20" });
       link.download = filename;
       link.click();
       return;
@@ -185,7 +202,7 @@ export class SignalChart extends BaseChart {
         max: timeOffset + Math.max(1 / sampleRate, (samples.length - 1) / sampleRate),
         axisLabel: { color: COLORS.text, fontSize: 10, formatter: (value: number) => value.toFixed(2) },
         nameTextStyle: { color: COLORS.text, fontSize: 9 },
-        axisLine: { lineStyle: { color: "#354640" } },
+        axisLine: { lineStyle: { color: isLightTheme() ? "#b8c7bf" : "#354640" } },
         splitLine: { lineStyle: { color: COLORS.grid } },
       },
       yAxis: {
@@ -299,7 +316,7 @@ export class SpectrumChart extends BaseChart {
         max: Math.max(1, maxFrequency || bins.at(-1)?.frequency || 3000),
         axisLabel: { color: COLORS.text, fontSize: 10, formatter: (value: number) => value.toFixed(0) },
         nameTextStyle: { color: COLORS.text, fontSize: 9 },
-        axisLine: { lineStyle: { color: "#354640" } },
+        axisLine: { lineStyle: { color: isLightTheme() ? "#b8c7bf" : "#354640" } },
         splitLine: { lineStyle: { color: COLORS.grid } },
       },
       yAxis: {

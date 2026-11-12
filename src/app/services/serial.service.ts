@@ -1,7 +1,7 @@
 import { Injectable, signal } from "@angular/core";
 import { Subject } from "rxjs";
 import type { DemoChunk } from "../../lib/demo";
-import { LupinStreamParser } from "../../lib/lupin";
+import { LupinStreamParser, type LupinStreamDiagnostics } from "../../lib/lupin";
 import {
   errorMessage,
   hexDump,
@@ -19,6 +19,13 @@ export class SerialService {
 
   readonly state = signal<SerialState>("disconnected");
   readonly logs = signal<readonly string[]>([]);
+  readonly diagnostics = signal<LupinStreamDiagnostics>({
+    bytesReceived: 0,
+    packetsReceived: 0,
+    discardedBytes: 0,
+    invalidPackets: 0,
+    resyncEvents: 0,
+  });
   readonly packets = new Subject<DemoChunk>();
   readonly supported = SerialConnection.supported();
 
@@ -28,6 +35,7 @@ export class SerialService {
     });
     this.connection.addEventListener("data", (event) => {
       this.parser.push((event as CustomEvent<Uint8Array>).detail);
+      this.diagnostics.set(this.parser.diagnostics);
     });
     this.parser.addEventListener("packet", (event) => {
       this.packets.next((event as CustomEvent<DemoChunk>).detail);
@@ -42,7 +50,8 @@ export class SerialService {
   }
 
   async connect(): Promise<void> {
-    this.parser.reset();
+    this.parser.reset(true);
+    this.diagnostics.set(this.parser.diagnostics);
     await this.connection.connect();
   }
 

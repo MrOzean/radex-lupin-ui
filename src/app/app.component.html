@@ -6,7 +6,7 @@
     </a>
     <div class="topbar-center"><span class="workspace-dot"></span>Рабочее место <span class="muted">/</span> Световая среда</div>
     <div class="topbar-actions">
-      <span class="status-badge" [class.connected]="serial.state() === 'connected' && measurement.running()" [class.demo]="measurement.demo.running()" [class.archive]="measurement.archive()">
+      <span class="status-badge" [class.connected]="serial.state() === 'connected' && measurement.streamState() === 'live'" [class.demo]="measurement.demo.running() && measurement.streamState() === 'live'" [class.archive]="measurement.archive()" [class.warning]="measurement.streamState() === 'waiting' || measurement.streamState() === 'stalled'">
         <span></span>{{ measurement.statusText() }}
       </span>
       <button type="button" class="icon-button" title="Диагностика COM-порта" aria-label="Диагностика COM-порта" (click)="openTerminal()">
@@ -50,7 +50,10 @@
       <article class="metric-card metric-main">
         <div class="metric-label"><span>{{ measurement.measurementType() === 'illuminance' ? 'ОСВЕЩЁННОСТЬ' : 'ЯРКОСТЬ' }}</span><span class="live-tag" [class.file]="measurement.archive()"><i></i>{{ measurement.modeLabel() }}</span></div>
         <div class="metric-value"><strong>{{ measurement.stats().mean.toFixed(1) }}</strong><span>{{ measurement.unit() }}</span></div>
-        <div class="comfort-track"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="comfort-track" [class.good]="measurement.comfort().tone === 'good'" [class.warning]="measurement.comfort().tone === 'warning'" [class.danger]="measurement.comfort().tone === 'danger'" role="img" [attr.aria-label]="measurement.comfort().text">
+          @for (active of measurement.comfort().segments; track $index) {<i [class.active]="active"></i>}
+        </div>
+        <div class="comfort-caption"><span>Оценка пульсации</span><strong>{{ measurement.comfort().text }}</strong></div>
         <div class="metric-footer"><span>Интегральное среднее</span><strong>{{ measurement.stats().mean.toFixed(1) }} {{ measurement.unit() }}</strong></div>
       </article>
       <article class="metric-card">
@@ -120,6 +123,15 @@
           <label class="field"><span>Комментарий к измерению</span><textarea rows="3" placeholder="Например: рабочее место у окна" [ngModel]="measurement.comment()" (ngModelChange)="measurement.comment.set($event)"></textarea></label>
           <div class="session-info"><span>Источник</span><strong>{{ measurement.sourceName() }}</strong></div>
           <div class="session-info"><span>Частота дискретизации</span><strong>{{ measurement.sampleRate() }} Гц</strong></div>
+          <div class="session-info"><span>Состояние потока</span><strong [class.warning-text]="measurement.streamState() === 'waiting'" [class.danger-text]="measurement.streamState() === 'stalled'">{{ measurement.streamStatusText() }}</strong></div>
+          @if (measurement.connected() || serial.diagnostics().packetsReceived > 0) {
+            <div class="stream-stats" aria-label="Диагностика потока LUPIN">
+              <span><small>Пакеты</small><strong>{{ serial.diagnostics().packetsReceived }}</strong></span>
+              <span><small>Битые</small><strong>{{ serial.diagnostics().invalidPackets }}</strong></span>
+              <span><small>Ресинхр.</small><strong>{{ serial.diagnostics().resyncEvents }}</strong></span>
+              <span><small>Отброшено</small><strong>{{ serial.diagnostics().discardedBytes }} Б</strong></span>
+            </div>
+          }
         </article>
         <article class="panel export-panel">
           <div class="recording-state"><span class="recording-dot" [class.active]="measurement.recordActive()"></span><div><strong>{{ measurement.archive() ? 'Открыт архив' : measurement.recordActive() ? 'Идёт запись' : 'Запись не ведётся' }}</strong><small>{{ measurement.archive() ? 'Полный поток доступен для анализа' : measurement.recordSampleCount() + ' отсчётов · ' + formatDuration(measurement.recordDuration()) }}</small></div></div>

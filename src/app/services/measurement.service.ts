@@ -1,4 +1,4 @@
-import { computed, inject, Injectable, signal } from "@angular/core";
+import { computed, inject, Injectable, OnDestroy, signal } from "@angular/core";
 import { dominantFrequencies, powerSpectrum, signalStats, type SampleArray, type SignalStats, type SpectrumBin } from "../../lib/analysis";
 import type { DemoChunk } from "../../lib/demo";
 import { LowPassFilter } from "../../lib/filter";
@@ -15,8 +15,10 @@ export interface LoadedMeasurement extends MeasurementFileData {
   fileName: string;
 }
 
+export type StreamState = "live" | "waiting" | "stalled" | "paused" | "archive" | "idle";
+
 @Injectable({ providedIn: "root" })
-export class MeasurementService {
+export class MeasurementService implements OnDestroy {
   readonly serial = inject(SerialService);
   readonly demo = inject(DemoService);
   private readonly recorder = new Recording();
@@ -24,6 +26,8 @@ export class MeasurementService {
   private sampleCount = 0;
   private lastRecorded = 0;
   private lowPass = new LowPassFilter(2000);
+  private readonly streamClock = signal(Date.now());
+  private readonly streamTimer = setInterval(() => this.streamClock.set(Date.now()), 500);
 
   readonly stats = signal<SignalStats>({ minimum: 0, maximum: 0, mean: 0, flickerPercent: 0 });
   readonly samples = signal<SampleArray>([]);
@@ -47,8 +51,53 @@ export class MeasurementService {
   readonly playbackPosition = computed(() => this.playbackOffset() / this.sampleRate());
   readonly playbackWindowSeconds = computed(() => this.playbackWindowSize() / this.sampleRate());
   readonly playbackMaxOffset = computed(() => Math.max(0, (this.archive()?.samples.length ?? 0) - this.playbackWindowSize()));
+  readonly lastPacketAt = signal<number | null>(null);
   readonly dominant = computed(() => dominantFrequencies(this.spectrum()));
   readonly connected = computed(() => this.serial.state() === "connected");
+  readonly streamState = computed<StreamState>(() => {
+    this.streamClock();
+    if (this.archive()) return "archive";
+    if (!this.connected() && !this.demo.running()) return "idle";
+    if (!this.running()) return "paused";
+    const lastPacket = this.lastPacketAt();
+    if (lastPacket === null) return "waiting";
+    return Date.now() - lastPacket > 2000 ? "stalled" : "live";
+  });
+  readonly streamStatusText = computed(() => {
+    const state = this.streamState();
+    if (state === "live") return "Пакеты принимаются";
+    if (state === "waiting") return "Ожидание первого пакета";
+    if (state === "stalled") {
+      const lastPacket = this.lastPacketAt();
+      const seconds = lastPacket === null ? 0 : (this.streamClock() - lastPacket) / 1000;
+      return `Нет пакетов ${seconds.toFixed(1)} с`;
+    }
+    if (state === "paused") return "Поток на паузе";
+    if (state === "archive") return "Архивный сигнал";
+    return "Источник остановлен";
+  });
+  readonly comfort = computed(() => {
+    const flicker = this.stats().flickerPercent;
+    if (this.samples().length === 0 || this.stats().maximum <= 0) {
+      return { tone: "idle", text: "Нет сигнала", segments: Array<boolean>(12).fill(false) };
+    }
+    const active = Math.max(1, Math.round(12 * (1 - Math.min(flicker, 20) / 20)));
+    let tone = "danger";
+    let text = "Высокая пульсация";
+    if (flicker <= 1) {
+      tone = "good";
+      text = "Очень низкая пульсация";
+    } else if (flicker <= 5) {
+      tone = "good";
+      text = "Низкая пульсация";
+    } else if (flicker <= 10) {
+      tone = "warning";
+      text = "Умеренная пульсация";
+    } else if (flicker <= 20) {
+      text = "Повышенная пульсация";
+    }
+    return { tone, text, segments: Array.from({ length: 12 }, (_, index) => index < active) };
+  });
   readonly modeLabel = computed(() => this.archive() ? "FILE" : this.running() ? "LIVE" : "PAUSE");
   readonly sourceName = computed(() => {
     const archive = this.archive();
@@ -57,9 +106,13 @@ export class MeasurementService {
     return this.demo.running() ? "Виртуальный светильник" : "Источник остановлен";
   });
   readonly statusText = computed(() => {
-    if (this.archive()) return "Архив · просмотр";
-    if (this.connected()) return this.running() ? "LUPIN · live" : "Пауза · порт открыт";
-    return this.demo.running() ? "Демо-режим" : "Остановлено";
+    const state = this.streamState();
+    if (state === "archive") return "Архив · просмотр";
+    if (state === "waiting") return this.connected() ? "LUPIN · ожидание данных" : "Демо · запуск";
+    if (state === "stalled") return this.connected() ? "LUPIN · нет пакетов" : "Демо · нет данных";
+    if (state === "paused") return this.connected() ? "Пауза · порт открыт" : "Пауза";
+    if (state === "live") return this.connected() ? "LUPIN · live" : "Демо-режим";
+    return "Остановлено";
   });
 
   constructor() {
@@ -75,6 +128,7 @@ export class MeasurementService {
     if (this.archive()) this.resetSessionSettings();
     this.archive.set(null);
     this.playbackOffset.set(0);
+    this.lastPacketAt.set(null);
     this.demo.stop();
     this.sampleRate.set(6000);
     this.lowPass = new LowPassFilter(6000);
@@ -178,6 +232,7 @@ export class MeasurementService {
     if (this.serial.state() !== "disconnected") await this.serial.disconnect();
 
     this.archive.set({ ...data, fileName: file.name });
+    this.lastPacketAt.set(null);
     this.running.set(false);
     this.sampleRate.set(data.header.sampleRate);
     this.measurementType.set(data.header.measurementType);
@@ -194,6 +249,7 @@ export class MeasurementService {
     if (!this.archive()) return;
     this.archive.set(null);
     this.playbackOffset.set(0);
+    this.lastPacketAt.set(null);
     this.buffer.fill(0);
     this.sampleCount = 0;
     this.resetSessionSettings();
@@ -226,8 +282,13 @@ export class MeasurementService {
     this.setPlaybackOffset(this.playbackOffset());
   }
 
+  ngOnDestroy(): void {
+    clearInterval(this.streamTimer);
+  }
+
   private processChunk(chunk: DemoChunk): void {
     if (!this.running() || this.archive()) return;
+    this.lastPacketAt.set(Date.now());
     if (this.recorder.active) {
       if (chunk.sampleRate !== this.recorder.sampleRate) {
         this.stopRecording();

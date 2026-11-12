@@ -10,6 +10,7 @@ export type SerialState = "disconnected" | "connecting" | "connected";
 
 export class SerialConnection extends EventTarget {
   private port: SerialPort | null = null;
+  private selectedPort: SerialPort | null = null;
   private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
   private writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
   private readTask: Promise<void> | null = null;
@@ -33,7 +34,8 @@ export class SerialConnection extends EventTarget {
     this.state = "connecting";
     this.emitState();
     try {
-      this.port = await navigator.serial.requestPort({ filters: [LUPIN_USB] });
+      this.port = this.selectedPort ?? await navigator.serial.requestPort({ filters: [LUPIN_USB] });
+      this.selectedPort = this.port;
       this.port.addEventListener("disconnect", this.portDisconnectListener);
       await this.port.open({ baudRate, dataBits: 8, stopBits: 1, parity: "none" });
       try {
@@ -150,6 +152,7 @@ export class SerialConnection extends EventTarget {
       // A physically disconnected port commonly cannot be closed cleanly.
     }
     this.port = null;
+    this.selectedPort = null;
     this.readTask = null;
     this.state = "disconnected";
     this.lossInProgress = false;

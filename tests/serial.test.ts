@@ -7,6 +7,7 @@ class FakeSerialPort extends EventTarget {
   writable: WritableStream<Uint8Array> | null = null;
   controller: ReadableStreamDefaultController<Uint8Array> | null = null;
   closed = false;
+  selectionRequests = 0;
   signalHistory: Array<{ dataTerminalReady?: boolean; requestToSend?: boolean }> = [];
 
   async open(): Promise<void> {
@@ -27,7 +28,7 @@ function installFakeSerial(port: FakeSerialPort, t: { after: (callback: () => vo
   const original = Object.getOwnPropertyDescriptor(globalThis, "navigator");
   Object.defineProperty(globalThis, "navigator", {
     configurable: true,
-    value: { serial: { requestPort: async () => port } },
+    value: { serial: { requestPort: async () => { port.selectionRequests++; return port; } } },
   });
   t.after(() => {
     if (original) Object.defineProperty(globalThis, "navigator", original);
@@ -53,6 +54,7 @@ test("unexpected stream failure resets the connection and allows reconnecting", 
 
   await connection.connect(9600);
   assert.equal(connection.state, "connected");
+  assert.equal(port.selectionRequests, 2);
   await connection.disconnect();
   assert.equal(connection.state, "disconnected");
 });
@@ -88,4 +90,7 @@ test("manual disconnect does not report an unexpected connection loss", async (t
   assert.equal(connection.state, "disconnected");
   assert.equal(port.closed, true);
   assert.deepEqual(port.signalHistory.at(-1), { dataTerminalReady: false, requestToSend: false });
+  await connection.connect(9600);
+  assert.equal(port.selectionRequests, 1);
+  await connection.disconnect();
 });

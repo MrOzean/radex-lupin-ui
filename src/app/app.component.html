@@ -223,5 +223,6 @@
   [state]="serial.state()"
   (writeHex)="writeHex($event)"
   (ping)="ping()"
+  (ping9600)="ping9600()"
   (cleared)="serial.clearLogs()" />
 <div class="toast" [class.visible]="toast().length > 0" role="status">{{ toast() }}</div>

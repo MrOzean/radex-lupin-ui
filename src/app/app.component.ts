@@ -88,6 +88,28 @@ export class AppComponent {
     }
   }
 
+  async ping9600(): Promise<void> {
+    let connectedOnce = false;
+    try {
+      if (this.serial.state() === "connected") await this.measurement.disconnect();
+      await this.serial.connect(9600);
+      connectedOnce = true;
+      const response = await this.serial.ping();
+      this.showToast(`RPC ping 9600 успешен · sequence ${response.sequence}`);
+    } catch (error) {
+      if ((error as Error).name !== "NotFoundError") this.showToast(errorMessage(error));
+    } finally {
+      if (connectedOnce) {
+        try {
+          await this.serial.disconnect();
+          await this.measurement.connect();
+        } catch (error) {
+          this.showToast(`Не удалось вернуться на 921600: ${errorMessage(error)}`);
+        }
+      }
+    }
+  }
+
   openTerminal(): void {
     this.terminal()?.open();
   }

@@ -68,12 +68,12 @@ export class SerialService {
     });
   }
 
-  async connect(): Promise<void> {
+  async connect(baudRate = 921600): Promise<void> {
     this.parser.reset(true);
     this.rpcParser.reset();
     this.rpcSequence = 0;
     this.diagnostics.set(this.parser.diagnostics);
-    await this.connection.connect();
+    await this.connection.connect(baudRate);
   }
 
   async disconnect(): Promise<void> {

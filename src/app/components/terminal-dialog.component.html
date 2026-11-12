@@ -13,6 +13,7 @@
   </form>
   <footer>
     <button type="button" class="button secondary" [disabled]="state() !== 'connected'" (click)="ping.emit()">Ping RPC</button>
+    <button type="button" class="button secondary" [disabled]="state() === 'connecting'" (click)="ping9600.emit()">Ping 9600</button>
     <button type="button" class="button secondary" (click)="cleared.emit()">Очистить журнал</button>
     <span>921600 бод · 8N1</span>
   </footer>

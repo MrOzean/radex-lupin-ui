@@ -6,4 +6,5 @@ research/*.bin
 research/*.out
 research/*.jsonl
 research/*.npz
+research/ekosfera-*.txt
 __pycache__/

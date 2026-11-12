@@ -31,6 +31,11 @@ h1 span { color: #7e918c; }
 .metrics { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
 .metric-card { border: 1px solid var(--border); background: linear-gradient(145deg, rgba(21, 32, 34, .98), rgba(16, 26, 28, .98)); border-radius: 12px; padding: 20px 22px 17px; min-width: 0; }
 .metric-main { border-color: rgba(200, 247, 107, .2); }
+.metric-card.zone-good { border-color: rgba(200, 247, 107, .28); }
+.metric-card.zone-warning { border-color: rgba(230, 184, 106, .34); }
+.metric-card.zone-danger { border-color: rgba(230, 125, 108, .42); }
+.metric-card.zone-warning .metric-value strong { color: #e6b86a; }
+.metric-card.zone-danger .metric-value strong { color: #ef8d7e; }
 .metric-label { display: flex; justify-content: space-between; align-items: center; color: #8fa29c; font-size: 9px; letter-spacing: .12em; font-weight: 600; }
 .metric-label svg { width: 17px; height: 17px; color: #627a73; }
 .live-tag { display: flex; align-items: center; gap: 5px; font-size: 8px; color: var(--lime); letter-spacing: .08em; }

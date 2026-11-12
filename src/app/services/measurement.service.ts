@@ -76,7 +76,21 @@ export class MeasurementService implements OnDestroy {
     if (state === "archive") return "Архивный сигнал";
     return "Источник остановлен";
   });
-  readonly comfort = computed(() => {
+  readonly illumination = computed(() => {
+    const lux = this.stats().mean;
+    if (this.samples().length === 0 || this.stats().maximum <= 0) {
+      return { tone: "idle", text: "Нет сигнала", segments: Array<boolean>(12).fill(false) };
+    }
+    const active = Math.max(1, Math.round(12 * Math.min(1, Math.log10(lux + 1) / 4)));
+    const inGreenZone = lux >= 300 && lux <= 2000;
+    const text = inGreenZone ? "Зелёная зона · 300–2000 лк" : lux < 300 ? "Ниже 300 лк" : "Выше 2000 лк";
+    return {
+      tone: inGreenZone ? "good" : "warning",
+      text,
+      segments: Array.from({ length: 12 }, (_, index) => index < active),
+    };
+  });
+  readonly flickerAssessment = computed(() => {
     const flicker = this.stats().flickerPercent;
     if (this.samples().length === 0 || this.stats().maximum <= 0) {
       return { tone: "idle", text: "Нет сигнала", segments: Array<boolean>(12).fill(false) };

@@ -1,0 +1,11 @@
+:host { display: block; min-width: 0; width: 100%; }
+.gauge { min-width: 110px; padding-top: 22px; }
+.gauge-track { position: relative; height: 13px; border: 1px solid rgba(255, 255, 255, .1); border-radius: 7px; box-shadow: inset 0 1px 3px #0005; }
+.gauge-marker { position: absolute; bottom: 4px; width: 18px; height: 31px; transform: translateX(-50%); color: #e6b86a; filter: drop-shadow(0 2px 3px #0009); transition: left .18s ease-out; }
+.gauge-marker svg { display: block; width: 100%; height: 100%; fill: #172325; stroke: currentColor; stroke-width: 2; }
+.gauge-marker .gauge-marker-center { fill: #e8eeea; stroke: none; }
+.gauge-scale { display: flex; justify-content: space-between; gap: 8px; margin-top: 5px; color: #647972; font-size: 8px; font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gauge-marker { transition: none; }
+}

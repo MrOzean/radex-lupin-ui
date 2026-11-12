@@ -46,6 +46,8 @@ export class MeasurementService implements OnDestroy {
   readonly lightingProfiles = LIGHTING_PROFILES;
   readonly lightingProfileId = signal(DEFAULT_LIGHTING_PROFILE_ID);
   readonly lightingProfile = computed(() => lightingProfileById(this.lightingProfileId()));
+  readonly levelMinimum = computed(() => this.measurementType() === "luminance" ? 50 : this.lightingProfile().minimumLux);
+  readonly levelMaximum = computed(() => this.measurementType() === "luminance" ? 1000 : this.lightingProfile().greenMaximumLux);
   readonly unit = computed(() => this.measurementType() === "illuminance" ? "лк" : "кд/м²");
   readonly filterEnabled = signal(true);
   readonly comment = signal("");
@@ -89,7 +91,7 @@ export class MeasurementService implements OnDestroy {
   readonly levelAssessment = computed(() => {
     const value = this.stats().mean;
     if (this.samples().length === 0 || this.stats().maximum <= 0) {
-      return { tone: "idle", text: "Нет сигнала", segments: Array<boolean>(12).fill(false) };
+      return { tone: "idle", text: "Нет сигнала" };
     }
     // Luminance limits are a visual approximation; illuminance uses the selected normative guide.
     const luminance = this.measurementType() === "luminance";
@@ -100,25 +102,14 @@ export class MeasurementService implements OnDestroy {
           ? { tone: "warning" as const, text: "Выше 1000 кд/м²" }
           : { tone: "good" as const, text: "Зелёная зона · 50–1000 кд/м²" }
       : assessIlluminance(value, this.lightingProfile());
-    const active = Math.max(1, Math.round(12 * Math.min(1, Math.log10(value + 1) / 4)));
-    return {
-      tone: assessment.tone,
-      text: assessment.text,
-      segments: Array.from({ length: 12 }, (_, index) => index < active),
-    };
+    return assessment;
   });
   readonly flickerAssessment = computed(() => {
     const flicker = this.stats().flickerPercent;
     if (this.samples().length === 0 || this.stats().maximum <= 0) {
-      return { tone: "idle", text: "Нет сигнала", segments: Array<boolean>(12).fill(false) };
+      return { tone: "idle", text: "Нет сигнала" };
     }
-    const assessment = assessFlicker(flicker, this.lightingProfile());
-    const active = Math.max(1, Math.round(12 * (1 - Math.min(flicker / (this.lightingProfile().flickerLimitPercent * 2), 1))));
-    return {
-      tone: assessment.tone,
-      text: assessment.text,
-      segments: Array.from({ length: 12 }, (_, index) => index < active),
-    };
+    return assessFlicker(flicker, this.lightingProfile());
   });
   readonly modeLabel = computed(() => this.archive() ? "FILE" : this.running() ? "LIVE" : "PAUSE");
   readonly sourceName = computed(() => {

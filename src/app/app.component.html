@@ -47,18 +47,34 @@
     <section class="metrics" aria-label="Текущие показания">
       <article class="metric-card metric-main" [class.zone-good]="measurement.levelAssessment().tone === 'good'" [class.zone-warning]="measurement.levelAssessment().tone === 'warning'">
         <div class="metric-label"><span>{{ measurement.measurementType() === 'illuminance' ? 'ОСВЕЩЁННОСТЬ' : 'ЯРКОСТЬ' }}</span><span class="live-tag" [class.file]="measurement.archive()"><i></i>{{ measurement.modeLabel() }}</span></div>
-        <div class="metric-value"><strong>{{ measurement.stats().mean.toFixed(1) }}</strong><span>{{ measurement.unit() }}</span></div>
-        <div class="comfort-track" [class.good]="measurement.levelAssessment().tone === 'good'" [class.warning]="measurement.levelAssessment().tone === 'warning'" role="img" [attr.aria-label]="measurement.levelAssessment().text">
-          @for (active of measurement.levelAssessment().segments; track $index) {<i [class.active]="active"></i>}
+        <div class="metric-overview">
+          <div class="metric-value"><strong>{{ measurement.stats().mean.toFixed(1) }}</strong><span>{{ measurement.unit() }}</span></div>
+          <app-level-gauge
+            [value]="measurement.stats().mean"
+            [minimum]="measurement.levelMinimum()"
+            [maximum]="measurement.levelMaximum()"
+            [scaleMaximum]="10000"
+            [unit]="measurement.unit()"
+            [label]="measurement.measurementType() === 'illuminance' ? 'Уровень освещённости' : 'Уровень яркости'"
+            [logarithmic]="true"
+            [active]="measurement.samples().length > 0 && measurement.stats().maximum > 0" />
         </div>
         <div class="comfort-caption"><span>{{ measurement.measurementType() === 'illuminance' ? 'Диапазон освещённости' : 'Диапазон яркости' }}</span><strong>{{ measurement.levelAssessment().text }}</strong></div>
         <div class="metric-footer"><span>Интегральное среднее</span><strong>{{ measurement.stats().mean.toFixed(1) }} {{ measurement.unit() }}</strong></div>
       </article>
       <article class="metric-card" [class.zone-good]="measurement.flickerAssessment().tone === 'good'" [class.zone-warning]="measurement.flickerAssessment().tone === 'warning'" [class.zone-danger]="measurement.flickerAssessment().tone === 'danger'">
         <div class="metric-label"><span>КОЭФФИЦИЕНТ ПУЛЬСАЦИИ</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h3l3-8 4 16 3-12 3 8h4"/></svg></div>
-        <div class="metric-value"><strong>{{ measurement.stats().flickerPercent.toFixed(1) }}</strong><span>%</span></div>
-        <div class="comfort-track" [class.good]="measurement.flickerAssessment().tone === 'good'" [class.warning]="measurement.flickerAssessment().tone === 'warning'" [class.danger]="measurement.flickerAssessment().tone === 'danger'" role="img" [attr.aria-label]="measurement.flickerAssessment().text">
-          @for (active of measurement.flickerAssessment().segments; track $index) {<i [class.active]="active"></i>}
+        <div class="metric-overview">
+          <div class="metric-value"><strong>{{ measurement.stats().flickerPercent.toFixed(1) }}</strong><span>%</span></div>
+          <app-level-gauge
+            kind="flicker"
+            [value]="measurement.stats().flickerPercent"
+            [minimum]="0"
+            [maximum]="measurement.lightingProfile().flickerLimitPercent"
+            [scaleMaximum]="measurement.lightingProfile().flickerLimitPercent * 2"
+            unit="%"
+            label="Коэффициент пульсации"
+            [active]="measurement.samples().length > 0 && measurement.stats().maximum > 0" />
         </div>
         <div class="comfort-caption"><span>Оценка пульсации</span><strong>{{ measurement.flickerAssessment().text }}</strong></div>
         <div class="metric-footer"><span>Диапазон</span><strong>{{ measurement.stats().minimum.toFixed(1) }}…{{ measurement.stats().maximum.toFixed(1) }} {{ measurement.unit() }}</strong></div>

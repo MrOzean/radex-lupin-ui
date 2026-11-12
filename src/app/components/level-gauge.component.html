@@ -1,0 +1,10 @@
+<div class="gauge" role="meter" [attr.aria-label]="label()" [attr.aria-valuemin]="0" [attr.aria-valuemax]="scaleMaximum()" [attr.aria-valuenow]="value()">
+  <div class="gauge-track" [style.background]="gradient()">
+    @if (active()) {
+      <span class="gauge-marker" [style.left.%]="markerPosition()" aria-hidden="true">
+        <svg viewBox="0 0 20 34"><path d="M10 33 2 18V3h16v15Z"/><path class="gauge-marker-center" d="M6 7h8v10H6z"/></svg>
+      </span>
+    }
+  </div>
+  <div class="gauge-scale"><span>0</span><span>{{ scaleMaximum() }} {{ unit() }}</span></div>
+</div>

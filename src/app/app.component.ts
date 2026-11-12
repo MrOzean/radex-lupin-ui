@@ -1,13 +1,14 @@
 import { Component, inject, signal, viewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { ChartPanelComponent } from "./components/chart-panel.component";
+import { LevelGaugeComponent } from "./components/level-gauge.component";
 import { TerminalDialogComponent } from "./components/terminal-dialog.component";
 import { errorMessage } from "../lib/serial";
 import { MeasurementService } from "./services/measurement.service";
 
 @Component({
   selector: "app-root",
-  imports: [FormsModule, ChartPanelComponent, TerminalDialogComponent],
+  imports: [FormsModule, ChartPanelComponent, LevelGaugeComponent, TerminalDialogComponent],
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.css",
 })

@@ -168,11 +168,6 @@ export class MeasurementService implements OnDestroy {
     this.running.set(false);
   }
 
-  async reconnect(): Promise<void> {
-    if (this.serial.state() !== "disconnected") await this.serial.disconnect();
-    await this.connect();
-  }
-
   dismissConnectionIssue(): void {
     this.connectionIssue.set(null);
   }

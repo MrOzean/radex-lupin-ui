@@ -6,3 +6,4 @@ research/*.bin
 research/*.out
 research/*.jsonl
 research/*.npz
+__pycache__/

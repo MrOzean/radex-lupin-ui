@@ -103,17 +103,22 @@ abstract class BaseChart {
   protected readonly chart: EChartsType;
   private readonly observer: ResizeObserver;
   private resizeFrame: number | null = null;
+  private readonly windowResizeListener = (): void => this.scheduleResize();
 
   constructor(host: HTMLElement, private readonly exportName: string) {
     this.chart = echarts.init(host, undefined, { renderer: "canvas" });
-    this.observer = new ResizeObserver(() => {
-      if (this.resizeFrame !== null) cancelAnimationFrame(this.resizeFrame);
-      this.resizeFrame = requestAnimationFrame(() => {
-        this.resizeFrame = null;
-        this.chart.resize();
-      });
-    });
+    this.observer = new ResizeObserver(() => this.scheduleResize());
     this.observer.observe(host);
+    if (host.parentElement) this.observer.observe(host.parentElement);
+    window.addEventListener("resize", this.windowResizeListener, { passive: true });
+  }
+
+  private scheduleResize(): void {
+    if (this.resizeFrame !== null) cancelAnimationFrame(this.resizeFrame);
+    this.resizeFrame = requestAnimationFrame(() => {
+      this.resizeFrame = null;
+      this.chart.resize();
+    });
   }
 
   resetZoom(): void {
@@ -126,6 +131,7 @@ abstract class BaseChart {
 
   dispose(): void {
     this.observer.disconnect();
+    window.removeEventListener("resize", this.windowResizeListener);
     if (this.resizeFrame !== null) cancelAnimationFrame(this.resizeFrame);
     this.chart.dispose();
   }

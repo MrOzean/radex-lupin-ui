@@ -16,13 +16,16 @@
             "index": "index.html",
             "tsConfig": "tsconfig.app.json",
             "polyfills": [],
-            "assets": [],
+            "assets": [
+              { "glob": "**/*", "input": "public", "output": "/" }
+            ],
             "styles": ["src/styles.css"],
             "outputPath": "dist"
           },
           "configurations": {
             "production": {
               "outputHashing": "all",
+              "serviceWorker": "ngsw.json",
               "budgets": [
                 { "type": "initial", "maximumWarning": "750kB", "maximumError": "1MB" }
               ]

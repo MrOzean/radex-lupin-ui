@@ -6,6 +6,10 @@ import { TerminalDialogComponent } from "./components/terminal-dialog.component"
 import { errorMessage } from "../lib/serial";
 import { MeasurementService } from "./services/measurement.service";
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+}
+
 @Component({
   selector: "app-root",
   imports: [FormsModule, ChartPanelComponent, LevelGaugeComponent, TerminalDialogComponent],
@@ -16,13 +20,32 @@ export class AppComponent {
   readonly measurement = inject(MeasurementService);
   readonly serial = this.measurement.serial;
   readonly toast = signal("");
+  readonly installAvailable = signal(false);
   private readonly terminal = viewChild(TerminalDialogComponent);
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
+  private installPromptEvent: BeforeInstallPromptEvent | null = null;
 
   constructor() {
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      this.installPromptEvent = event as BeforeInstallPromptEvent;
+      this.installAvailable.set(true);
+    });
+    window.addEventListener("appinstalled", () => {
+      this.installPromptEvent = null;
+      this.installAvailable.set(false);
+      this.showToast("Lupin Light Lab установлен");
+    });
     this.serial.connectionLoss.subscribe((reason) => {
       this.showToast(`LUPIN отключён: ${reason}. Уже записанные данные сохранены.`);
     });
+  }
+
+  async installApp(): Promise<void> {
+    if (!this.installPromptEvent) return;
+    await this.installPromptEvent.prompt();
+    this.installPromptEvent = null;
+    this.installAvailable.set(false);
   }
 
   async connect(): Promise<void> {

@@ -8,6 +8,11 @@
       <span class="status-badge" [class.connected]="serial.state() === 'connected' && measurement.streamState() === 'live'" [class.demo]="measurement.demo.running() && measurement.streamState() === 'live'" [class.archive]="measurement.archive()" [class.warning]="measurement.streamState() === 'waiting' || measurement.streamState() === 'stalled'">
         <span></span>{{ measurement.statusText() }}
       </span>
+      @if (installAvailable()) {
+        <button type="button" class="icon-button" title="Установить приложение" aria-label="Установить приложение" (click)="installApp()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 18v3h16v-3"/></svg>
+        </button>
+      }
       <button type="button" class="icon-button" title="Диагностика COM-порта" aria-label="Диагностика COM-порта" (click)="openTerminal()">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 7 4 4-4 4M11 16h8"/></svg>
       </button>

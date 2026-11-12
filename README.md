@@ -29,6 +29,10 @@ npm run preview
 
 Для подключения нужен Chrome/Edge и HTTPS или `localhost`. Web Serial недоступен в Firefox/Safari; на iOS потребуется другой транспорт.
 
+## PWA и офлайн
+
+Production-сборка является устанавливаемым PWA. После первого открытия интерфейс, ECharts и архивный анализ работают без сети. Для установки используйте кнопку в верхней панели или штатный пункт Chrome/Edge «Установить приложение». Service worker включается только в production-режиме.
+
 ## Технологии
 
 - **Angular 22.2**, standalone-компоненты, signals и zoneless change detection;

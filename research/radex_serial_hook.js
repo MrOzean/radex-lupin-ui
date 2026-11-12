@@ -19,7 +19,7 @@ function exportOn(moduleName, name) {
 
 const serialHandles = new Set();
 
-["kernel32.dll"].forEach((moduleName) => {
+["kernel32.dll", "kernelbase.dll"].forEach((moduleName) => {
   let module;
   try {
     module = Process.getModuleByName(moduleName);
@@ -27,7 +27,10 @@ const serialHandles = new Set();
     return;
   }
 
-  ["CreateFileW", "SetCommState", "SetCommTimeouts", "PurgeComm", "EscapeCommFunction", "WriteFile", "ReadFile"].forEach((name) => {
+  const apiNames = moduleName === "kernelbase.dll"
+    ? ["WriteFile", "WriteFileEx"]
+    : ["CreateFileW", "SetCommState", "SetCommTimeouts", "PurgeComm", "EscapeCommFunction", "WriteFile", "WriteFileEx", "ReadFile"];
+  apiNames.forEach((name) => {
     let address;
     try {
       address = module.getExportByName(name);
@@ -87,7 +90,7 @@ const serialHandles = new Set();
           });
         },
       });
-    } else if (name === "WriteFile") {
+    } else if (name === "WriteFile" || name === "WriteFileEx") {
       Interceptor.attach(address, {
         onEnter(args) {
           const handle = args[0].toString();
@@ -95,6 +98,7 @@ const serialHandles = new Set();
           const length = args[2].toUInt32();
           report("write", {
             module: moduleName,
+            api: name,
             handle,
             length,
             hex: length > 0 ? hex(args[1].readByteArray(length)) : "",

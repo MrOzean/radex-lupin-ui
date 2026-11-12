@@ -11,7 +11,7 @@ import frida
 
 ROOT = Path(__file__).resolve().parent
 EXE = Path(r"D:\Apps\radexlight32\radexlight.exe")
-OUTPUT = ROOT / "official-serial.jsonl"
+OUTPUT = ROOT / f"official-serial-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.jsonl"
 
 
 def main() -> None:

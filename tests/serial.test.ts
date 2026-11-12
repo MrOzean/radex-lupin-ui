@@ -7,6 +7,7 @@ class FakeSerialPort extends EventTarget {
   writable: WritableStream<Uint8Array> | null = null;
   controller: ReadableStreamDefaultController<Uint8Array> | null = null;
   closed = false;
+  signalHistory: Array<{ dataTerminalReady?: boolean; requestToSend?: boolean }> = [];
 
   async open(): Promise<void> {
     this.closed = false;
@@ -16,7 +17,9 @@ class FakeSerialPort extends EventTarget {
     this.writable = new WritableStream<Uint8Array>();
   }
 
-  async setSignals(): Promise<void> {}
+  async setSignals(signals: { dataTerminalReady?: boolean; requestToSend?: boolean }): Promise<void> {
+    this.signalHistory.push(signals);
+  }
   async close(): Promise<void> { this.closed = true; }
 }
 
@@ -84,4 +87,5 @@ test("manual disconnect does not report an unexpected connection loss", async (t
   assert.equal(unexpectedLoss, false);
   assert.equal(connection.state, "disconnected");
   assert.equal(port.closed, true);
+  assert.deepEqual(port.signalHistory.at(-1), { dataTerminalReady: false, requestToSend: false });
 });

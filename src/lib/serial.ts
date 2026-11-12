@@ -105,6 +105,11 @@ export class SerialConnection extends EventTarget {
       await this.reader?.cancel();
       if (this.readTask) await this.readTask;
       try {
+        await this.port.setSignals({ dataTerminalReady: false, requestToSend: false });
+      } catch {
+        // Closing must continue even if the device disappeared concurrently.
+      }
+      try {
         this.writer?.releaseLock();
       } catch {
         // A pending browser write can release the lock during shutdown.

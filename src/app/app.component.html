@@ -125,22 +125,26 @@
 
     <section class="dashboard-grid">
       <div class="charts-column">
-        <app-chart-panel
-          kind="signal"
-          title="Осциллограмма"
-          description="Колесо — масштаб · перетаскивание — движение · наведение — значения"
-          [meta]="measurement.sampleRate() + ' Гц · ' + measurement.samples().length + ' точек'"
-          [samples]="measurement.samples()"
-          [sampleRate]="measurement.sampleRate()"
-          [timeOffset]="measurement.archive() ? measurement.playbackPosition() : 0"
-          [unit]="measurement.unit()"
-          (unitChange)="measurement.setMeasurementType($event === 'лк' ? 'illuminance' : 'luminance')" />
-        <app-chart-panel
-          kind="spectrum"
-          title="Спектр пульсаций"
-          description="Амплитуда частотных составляющих · легенда кликабельна"
-          [meta]="'дБ · 0–' + (measurement.sampleRate() / 2) + ' Гц'"
-          [bins]="measurement.spectrum()" />
+        @defer (on immediate) {
+          <app-chart-panel
+            kind="signal"
+            title="Осциллограмма"
+            description="Колесо — масштаб · перетаскивание — движение · наведение — значения"
+            [meta]="measurement.sampleRate() + ' Гц · ' + measurement.samples().length + ' точек'"
+            [samples]="measurement.samples()"
+            [sampleRate]="measurement.sampleRate()"
+            [timeOffset]="measurement.archive() ? measurement.playbackPosition() : 0"
+            [unit]="measurement.unit()"
+            (unitChange)="measurement.setMeasurementType($event === 'лк' ? 'illuminance' : 'luminance')" />
+          <app-chart-panel
+            kind="spectrum"
+            title="Спектр пульсаций"
+            description="Амплитуда частотных составляющих · легенда кликабельна"
+            [meta]="'дБ · 0–' + (measurement.sampleRate() / 2) + ' Гц'"
+            [bins]="measurement.spectrum()" />
+        } @placeholder {
+          <div class="panel chart-placeholder" role="status">Загрузка графиков…</div>
+        }
       </div>
 
       <aside class="side-column">

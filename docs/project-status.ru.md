@@ -110,7 +110,6 @@ Soak-тест около 20 минут: без зависаний, память 
 
 - production HTTPS;
 - PWA/офлайн;
-- lazy-loading/разбиение Angular + ECharts bundle;
 - инструкция по Chrome/Edge и Android OTG;
 - расширенные тесты и длительный soak-тест после новых функций.
 

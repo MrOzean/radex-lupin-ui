@@ -14,6 +14,10 @@ export class SerialConnection extends EventTarget {
   private writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
   private readTask: Promise<void> | null = null;
   private closing = false;
+  private lossInProgress = false;
+  private readonly portDisconnectListener = (): void => {
+    void this.handleConnectionLoss("USB-устройство отключено");
+  };
   state: SerialState = "disconnected";
 
   static supported(): boolean {
@@ -30,6 +34,7 @@ export class SerialConnection extends EventTarget {
     this.emitState();
     try {
       this.port = await navigator.serial.requestPort({ filters: [LUPIN_USB] });
+      this.port.addEventListener("disconnect", this.portDisconnectListener);
       await this.port.open({ baudRate, dataBits: 8, stopBits: 1, parity: "none" });
       try {
         await this.port.setSignals({ dataTerminalReady: false, requestToSend: false });
@@ -45,6 +50,7 @@ export class SerialConnection extends EventTarget {
       this.readTask = this.readLoop();
       this.emitState();
     } catch (error) {
+      this.port?.removeEventListener("disconnect", this.portDisconnectListener);
       this.port = null;
       this.writer = null;
       this.state = "disconnected";
@@ -94,6 +100,7 @@ export class SerialConnection extends EventTarget {
   async disconnect(): Promise<void> {
     if (!this.port) return;
     this.closing = true;
+    this.port.removeEventListener("disconnect", this.portDisconnectListener);
     try {
       await this.reader?.cancel();
       if (this.readTask) await this.readTask;
@@ -116,9 +123,16 @@ export class SerialConnection extends EventTarget {
   }
 
   private async handleConnectionLoss(reason: string): Promise<void> {
-    if (this.state === "disconnected") return;
+    if (this.state === "disconnected" || this.lossInProgress) return;
+    this.lossInProgress = true;
     this.closing = true;
     this.log("system", `Соединение потеряно: ${reason}`);
+    this.port?.removeEventListener("disconnect", this.portDisconnectListener);
+    try {
+      await this.reader?.cancel();
+    } catch {
+      // An errored reader is already closed by the browser.
+    }
     try {
       this.writer?.releaseLock();
     } catch {
@@ -133,6 +147,7 @@ export class SerialConnection extends EventTarget {
     this.port = null;
     this.readTask = null;
     this.state = "disconnected";
+    this.lossInProgress = false;
     this.emitState();
     this.dispatchEvent(new CustomEvent<string>("connectionloss", { detail: reason }));
   }

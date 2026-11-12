@@ -54,6 +54,23 @@ test("unexpected stream failure resets the connection and allows reconnecting", 
   assert.equal(connection.state, "disconnected");
 });
 
+test("native SerialPort disconnect event reports a visible connection loss", async (t) => {
+  const port = new FakeSerialPort();
+  installFakeSerial(port, t);
+  const connection = new SerialConnection();
+  await connection.connect(9600);
+
+  const lost = new Promise<string>((resolve) => {
+    connection.addEventListener("connectionloss", (event) => {
+      resolve((event as CustomEvent<string>).detail);
+    }, { once: true });
+  });
+  port.dispatchEvent(new Event("disconnect"));
+
+  assert.match(await lost, /USB/);
+  assert.equal(connection.state, "disconnected");
+});
+
 test("manual disconnect does not report an unexpected connection loss", async (t) => {
   const port = new FakeSerialPort();
   installFakeSerial(port, t);

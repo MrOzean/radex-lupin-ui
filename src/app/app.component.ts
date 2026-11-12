@@ -39,6 +39,15 @@ export class AppComponent {
     }
   }
 
+  async reconnect(): Promise<void> {
+    try {
+      await this.measurement.reconnect();
+      this.showToast("LUPIN подключён повторно");
+    } catch (error) {
+      if ((error as Error).name !== "NotFoundError") this.showToast(errorMessage(error));
+    }
+  }
+
   async writeHex(text: string): Promise<void> {
     try {
       await this.serial.writeHex(text);

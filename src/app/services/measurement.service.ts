@@ -64,6 +64,7 @@ export class MeasurementService implements OnDestroy {
   readonly playbackWindowSeconds = computed(() => this.playbackWindowSize() / this.sampleRate());
   readonly playbackMaxOffset = computed(() => Math.max(0, (this.archive()?.samples.length ?? 0) - this.playbackWindowSize()));
   readonly lastPacketAt = signal<number | null>(null);
+  readonly connectionIssue = signal<string | null>(null);
   readonly dominant = computed(() => dominantFrequencies(this.spectrum()));
   readonly connected = computed(() => this.serial.state() === "connected");
   readonly streamState = computed<StreamState>(() => {
@@ -74,6 +75,12 @@ export class MeasurementService implements OnDestroy {
     const lastPacket = this.lastPacketAt();
     if (lastPacket === null) return "waiting";
     return Date.now() - lastPacket > 2000 ? "stalled" : "live";
+  });
+  readonly streamAlert = computed(() => {
+    const issue = this.connectionIssue();
+    if (issue) return `LUPIN отключён: ${issue}`;
+    if (this.streamState() === "stalled") return "Поток данных остановился. Проверьте USB-подключение или переподключите прибор.";
+    return null;
   });
   readonly streamStatusText = computed(() => {
     const state = this.streamState();
@@ -131,7 +138,8 @@ export class MeasurementService implements OnDestroy {
   constructor() {
     this.demo.packets.subscribe((chunk) => this.processChunk(chunk));
     this.serial.packets.subscribe((chunk) => this.processChunk(chunk));
-    this.serial.connectionLoss.subscribe(() => {
+    this.serial.connectionLoss.subscribe((reason) => {
+      this.connectionIssue.set(reason);
       this.stopRecording();
       this.running.set(false);
       this.lastPacketAt.set(null);
@@ -142,6 +150,7 @@ export class MeasurementService implements OnDestroy {
 
   async connect(): Promise<void> {
     await this.serial.connect();
+    this.connectionIssue.set(null);
     this.stopRecording();
     if (this.archive()) this.resetSessionSettings();
     this.archive.set(null);
@@ -157,6 +166,15 @@ export class MeasurementService implements OnDestroy {
     this.stopRecording();
     await this.serial.disconnect();
     this.running.set(false);
+  }
+
+  async reconnect(): Promise<void> {
+    if (this.serial.state() !== "disconnected") await this.serial.disconnect();
+    await this.connect();
+  }
+
+  dismissConnectionIssue(): void {
+    this.connectionIssue.set(null);
   }
 
   togglePause(): void {

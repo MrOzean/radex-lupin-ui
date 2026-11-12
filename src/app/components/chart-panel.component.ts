@@ -4,42 +4,8 @@ import { SignalChart, SpectrumChart, type SpectrumView } from "../../lib/charts"
 
 @Component({
   selector: "app-chart-panel",
-  template: `
-    @if (expanded()) {
-      <div class="chart-backdrop" (click)="toggleExpand()"></div>
-    }
-    <article class="panel chart-panel" [class.expanded]="expanded()">
-      <header class="panel-header">
-        <div>
-          <h2>{{ title() }}</h2>
-          <p>{{ description() }}</p>
-        </div>
-        <div class="panel-actions">
-          @if (kind() === 'signal') {
-            <div class="view-switch" aria-label="Единицы измерения">
-              <button type="button" [class.active]="unit() === 'лк'" (click)="unitChange.emit('лк')">лк</button>
-              <button type="button" [class.active]="unit() === 'кд/м²'" (click)="unitChange.emit('кд/м²')">кд/м²</button>
-            </div>
-          }
-          @if (kind() === 'spectrum') {
-            <div class="view-switch" aria-label="Тип спектра">
-              <button type="button" [class.active]="spectrumView() === 'bars'" (click)="setView('bars')">Столбцы</button>
-              <button type="button" [class.active]="spectrumView() === 'line'" (click)="setView('line')">Линия</button>
-              <button type="button" [class.active]="spectrumView() === 'candles'" (click)="setView('candles')">Свечи</button>
-            </div>
-          }
-          <span class="panel-meta">{{ meta() }}</span>
-          <button type="button" class="chart-action" (click)="reset()">Сброс</button>
-          <button type="button" class="chart-action" (click)="export('png')">PNG</button>
-          <button type="button" class="chart-action" (click)="export('svg')">SVG</button>
-          <button type="button" class="chart-action expand-action" (click)="toggleExpand()">{{ expanded() ? 'Свернуть' : 'Развернуть' }}</button>
-        </div>
-      </header>
-      <div class="chart-wrap" [class.spectrum]="kind() === 'spectrum'">
-        <div #host class="chart"></div>
-      </div>
-    </article>
-  `,
+  templateUrl: "./chart-panel.component.html",
+  styleUrl: "./chart-panel.component.css",
 })
 export class ChartPanelComponent implements OnDestroy {
   readonly kind = input.required<"signal" | "spectrum">();

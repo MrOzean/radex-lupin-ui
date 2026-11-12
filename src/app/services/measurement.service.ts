@@ -29,7 +29,7 @@ export class MeasurementService implements OnDestroy {
   readonly serial = inject(SerialService);
   readonly demo = inject(DemoService);
   private readonly recorder = new Recording();
-  private readonly buffer = new Float32Array(2048);
+  private buffer = new Float32Array(2000);
   private sampleCount = 0;
   private lastRecorded = 0;
   private lowPass = new LowPassFilter(2000);
@@ -331,6 +331,10 @@ export class MeasurementService implements OnDestroy {
       : chunk.samples.map((value) => value * this.correction());
     const processed = this.filterEnabled() ? this.lowPass.process(corrected) : corrected;
 
+    if (this.buffer.length !== chunk.sampleRate) {
+      this.buffer = new Float32Array(chunk.sampleRate);
+      this.sampleCount = 0;
+    }
     if (processed.length >= this.buffer.length) {
       this.buffer.set(processed.slice(-this.buffer.length));
       this.sampleCount = this.buffer.length;

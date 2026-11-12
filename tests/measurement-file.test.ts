@@ -17,6 +17,7 @@ function header(sampleCount: number): MeasurementFileHeader {
     sampleRate: 6000,
     sampleCount,
     measurementType: "illuminance",
+    lightingProfileId: "office",
     correction: 1.25,
     filterEnabled: true,
     comment: "Рабочее место у окна",

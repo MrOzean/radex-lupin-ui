@@ -7,7 +7,8 @@
     "dev": "ng serve --host 0.0.0.0 --port 5173",
     "start": "ng serve --host 0.0.0.0 --port 5173",
     "build": "ng build",
-    "preview": "ng serve --configuration production --host 0.0.0.0 --port 5173"
+    "preview": "ng serve --configuration production --host 0.0.0.0 --port 5173",
+    "test": "node --test tests/measurement-file.test.ts"
   },
   "devDependencies": {
     "@angular/build": "^22.2.6",

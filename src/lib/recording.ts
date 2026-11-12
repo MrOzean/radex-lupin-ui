@@ -15,6 +15,7 @@ export interface MeasurementRow {
 
 export interface RecordingExportOptions {
   measurementType: MeasurementType;
+  lightingProfileId: string;
   correction: number;
   filterEnabled: boolean;
   comment: string;
@@ -111,6 +112,7 @@ export class Recording {
         sampleRate: this.streamSampleRate,
         sampleCount: samples.length,
         measurementType: options.measurementType,
+        lightingProfileId: options.lightingProfileId,
         correction: options.correction,
         filterEnabled: options.filterEnabled,
         comment: options.comment.trim(),

@@ -16,6 +16,7 @@ export interface MeasurementFileHeader {
   sampleRate: number;
   sampleCount: number;
   measurementType: MeasurementType;
+  lightingProfileId?: string;
   correction: number;
   filterEnabled: boolean;
   comment: string;
@@ -128,6 +129,9 @@ function validateHeader(header: MeasurementFileHeader, actualSampleCount?: numbe
   }
   if (typeof header.filterEnabled !== "boolean" || typeof header.comment !== "string" || typeof header.source !== "string") {
     throw new Error("Некорректные метаданные измерения");
+  }
+  if (header.lightingProfileId !== undefined && typeof header.lightingProfileId !== "string") {
+    throw new Error("Некорректный профиль освещения");
   }
   if (header.device !== null && (typeof header.device !== "object" || typeof header.device.name !== "string")) {
     throw new Error("Некорректные метаданные прибора");

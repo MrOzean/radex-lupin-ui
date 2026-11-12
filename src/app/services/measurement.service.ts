@@ -3,6 +3,13 @@ import { dominantFrequencies, powerSpectrum, signalStats, type SampleArray, type
 import type { DemoChunk } from "../../lib/demo";
 import { LowPassFilter } from "../../lib/filter";
 import {
+  assessFlicker,
+  assessIlluminance,
+  DEFAULT_LIGHTING_PROFILE_ID,
+  LIGHTING_PROFILES,
+  lightingProfileById,
+} from "../../lib/lighting";
+import {
   decodeMeasurementFile,
   type MeasurementFileData,
   type MeasurementType,
@@ -36,6 +43,9 @@ export class MeasurementService implements OnDestroy {
   readonly running = signal(false);
   readonly correction = signal(1);
   readonly measurementType = signal<MeasurementType>("illuminance");
+  readonly lightingProfiles = LIGHTING_PROFILES;
+  readonly lightingProfileId = signal(DEFAULT_LIGHTING_PROFILE_ID);
+  readonly lightingProfile = computed(() => lightingProfileById(this.lightingProfileId()));
   readonly unit = computed(() => this.measurementType() === "illuminance" ? "лк" : "кд/м²");
   readonly filterEnabled = signal(true);
   readonly comment = signal("");
@@ -81,18 +91,19 @@ export class MeasurementService implements OnDestroy {
     if (this.samples().length === 0 || this.stats().maximum <= 0) {
       return { tone: "idle", text: "Нет сигнала", segments: Array<boolean>(12).fill(false) };
     }
-    // Visual approximation of RadexLight zones; exact luminance limits still need verification.
+    // Luminance limits are a visual approximation; illuminance uses the selected normative guide.
     const luminance = this.measurementType() === "luminance";
-    const minimum = luminance ? 50 : 300;
-    const maximum = luminance ? 1000 : 2000;
+    const assessment = luminance
+      ? value < 50
+        ? { tone: "warning" as const, text: "Ниже 50 кд/м²" }
+        : value > 1000
+          ? { tone: "warning" as const, text: "Выше 1000 кд/м²" }
+          : { tone: "good" as const, text: "Зелёная зона · 50–1000 кд/м²" }
+      : assessIlluminance(value, this.lightingProfile());
     const active = Math.max(1, Math.round(12 * Math.min(1, Math.log10(value + 1) / 4)));
-    const inGreenZone = value >= minimum && value <= maximum;
-    const text = inGreenZone
-      ? `Зелёная зона · ${minimum}–${maximum} ${this.unit()}`
-      : value < minimum ? `Ниже ${minimum} ${this.unit()}` : `Выше ${maximum} ${this.unit()}`;
     return {
-      tone: inGreenZone ? "good" : "warning",
-      text,
+      tone: assessment.tone,
+      text: assessment.text,
       segments: Array.from({ length: 12 }, (_, index) => index < active),
     };
   });
@@ -101,22 +112,13 @@ export class MeasurementService implements OnDestroy {
     if (this.samples().length === 0 || this.stats().maximum <= 0) {
       return { tone: "idle", text: "Нет сигнала", segments: Array<boolean>(12).fill(false) };
     }
-    const active = Math.max(1, Math.round(12 * (1 - Math.min(flicker, 20) / 20)));
-    let tone = "danger";
-    let text = "Высокая пульсация";
-    if (flicker <= 1) {
-      tone = "good";
-      text = "Очень низкая пульсация";
-    } else if (flicker <= 5) {
-      tone = "good";
-      text = "Низкая пульсация";
-    } else if (flicker <= 10) {
-      tone = "warning";
-      text = "Умеренная пульсация";
-    } else if (flicker <= 20) {
-      text = "Повышенная пульсация";
-    }
-    return { tone, text, segments: Array.from({ length: 12 }, (_, index) => index < active) };
+    const assessment = assessFlicker(flicker, this.lightingProfile());
+    const active = Math.max(1, Math.round(12 * (1 - Math.min(flicker / (this.lightingProfile().flickerLimitPercent * 2), 1))));
+    return {
+      tone: assessment.tone,
+      text: assessment.text,
+      segments: Array.from({ length: 12 }, (_, index) => index < active),
+    };
   });
   readonly modeLabel = computed(() => this.archive() ? "FILE" : this.running() ? "LIVE" : "PAUSE");
   readonly sourceName = computed(() => {
@@ -189,6 +191,10 @@ export class MeasurementService implements OnDestroy {
     this.measurementType.set(type);
   }
 
+  setLightingProfile(id: string): void {
+    this.lightingProfileId.set(lightingProfileById(id).id);
+  }
+
   setFilterEnabled(enabled: boolean): void {
     this.filterEnabled.set(enabled);
     this.lowPass.reset();
@@ -237,6 +243,7 @@ export class MeasurementService implements OnDestroy {
     if (this.recorder.sampleCount === 0) return false;
     const binary = this.recorder.toBinary({
       measurementType: this.measurementType(),
+      lightingProfileId: this.lightingProfileId(),
       correction: this.correction(),
       filterEnabled: this.filterEnabled(),
       comment: this.comment(),
@@ -256,6 +263,7 @@ export class MeasurementService implements OnDestroy {
     this.running.set(false);
     this.sampleRate.set(data.header.sampleRate);
     this.measurementType.set(data.header.measurementType);
+    this.setLightingProfile(data.header.lightingProfileId ?? DEFAULT_LIGHTING_PROFILE_ID);
     this.correction.set(data.header.correction);
     this.filterEnabled.set(data.header.filterEnabled);
     this.comment.set(data.header.comment);
@@ -388,6 +396,7 @@ export class MeasurementService implements OnDestroy {
   private resetSessionSettings(): void {
     this.correction.set(1);
     this.measurementType.set("illuminance");
+    this.lightingProfileId.set(DEFAULT_LIGHTING_PROFILE_ID);
     this.filterEnabled.set(true);
     this.comment.set("");
   }

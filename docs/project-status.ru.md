@@ -158,15 +158,5 @@ Soak-тест около 20 минут: без зависаний, память 
 - `TerminalDialogComponent` — диагностика;
 - `src/lib/` — протокол, DSP, запись и низкоуровневый transport.
 
-## Git
-
-Локальные коммиты:
-
-```text
-c2eefa4 checkpoint: live LUPIN monitor before Angular migration
-6a33ac1 refactor: migrate live monitor to Angular 22
-bcd836e fix: match spectrum scaling and add low-pass filter
-c9dd09e feat: add chart display controls and sample validation
-```
 
 Подробный reverse engineering: `docs/research/radexlight-protocol.ru.md`.

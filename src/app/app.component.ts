@@ -9,6 +9,7 @@ import { MeasurementService } from "./services/measurement.service";
   selector: "app-root",
   imports: [FormsModule, ChartPanelComponent, TerminalDialogComponent],
   templateUrl: "./app.component.html",
+  styleUrl: "./app.component.css",
 })
 export class AppComponent {
   readonly measurement = inject(MeasurementService);
@@ -45,6 +46,40 @@ export class AppComponent {
 
   exportCsv(): void {
     this.measurement.exportCsv();
+  }
+
+  exportMeasurement(): void {
+    if (this.measurement.exportMeasurement()) this.showToast("Полная запись сохранена");
+  }
+
+  async openMeasurementFile(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      await this.measurement.loadFile(file);
+      this.showToast(`Открыт архив: ${file.name}`);
+    } catch (error) {
+      this.showToast(errorMessage(error));
+    } finally {
+      input.value = "";
+    }
+  }
+
+  closeFile(): void {
+    this.measurement.closeFile();
+    this.showToast("Возвращён живой режим");
+  }
+
+  formatDuration(seconds: number): string {
+    if (!Number.isFinite(seconds) || seconds < 0) return "0:00.0";
+    const minutes = Math.floor(seconds / 60);
+    const remainder = seconds - minutes * 60;
+    return `${minutes}:${remainder.toFixed(1).padStart(4, "0")}`;
+  }
+
+  formatDate(value: string): string {
+    return new Date(value).toLocaleString("ru-RU");
   }
 
   showToast(message: string): void {

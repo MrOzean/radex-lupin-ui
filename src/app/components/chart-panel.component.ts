@@ -48,6 +48,7 @@ export class ChartPanelComponent implements OnDestroy {
   readonly meta = input("");
   readonly samples = input<SampleArray>([]);
   readonly sampleRate = input(2000);
+  readonly timeOffset = input(0);
   readonly bins = input<readonly SpectrumBin[]>([]);
   readonly unit = input("лк");
   readonly unitChange = output<"лк" | "кд/м²">();
@@ -60,6 +61,7 @@ export class ChartPanelComponent implements OnDestroy {
     effect(() => {
       this.samples();
       this.sampleRate();
+      this.timeOffset();
       this.bins();
       this.unit();
       this.render();
@@ -102,7 +104,7 @@ export class ChartPanelComponent implements OnDestroy {
   private render(): void {
     if (!this.chart) return;
     if (this.kind() === "signal" && this.chart instanceof SignalChart) {
-      this.chart.update(this.samples(), this.sampleRate(), this.unit());
+      this.chart.update(this.samples(), this.sampleRate(), this.unit(), this.timeOffset());
     } else if (this.kind() === "spectrum" && this.chart instanceof SpectrumChart) {
       this.chart.update(this.bins());
     }

@@ -6,10 +6,10 @@
     </a>
     <div class="topbar-center"><span class="workspace-dot"></span>Рабочее место <span class="muted">/</span> Световая среда</div>
     <div class="topbar-actions">
-      <span class="status-badge" [class.connected]="serial.state() === 'connected' && measurement.running()" [class.demo]="measurement.demo.running()">
+      <span class="status-badge" [class.connected]="serial.state() === 'connected' && measurement.running()" [class.demo]="measurement.demo.running()" [class.archive]="measurement.archive()">
         <span></span>{{ measurement.statusText() }}
       </span>
-      <button type="button" class="icon-button" title="Диагностика COM-порта" (click)="openTerminal()">
+      <button type="button" class="icon-button" title="Диагностика COM-порта" aria-label="Диагностика COM-порта" (click)="openTerminal()">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 7 4 4-4 4M11 16h8"/></svg>
       </button>
       <button type="button" class="button primary" (click)="connect()" [disabled]="serial.state() === 'connecting' || !serial.supported">
@@ -21,25 +21,34 @@
 
   <main class="workspace">
     <section class="page-heading">
-      <div><p class="eyebrow">ИЗМЕРЕНИЕ СВЕТОВОЙ СРЕДЫ</p><h1>Картина света. <span>В реальном времени.</span></h1></div>
+      <div>
+        <p class="eyebrow">{{ measurement.archive() ? 'АРХИВ ИЗМЕРЕНИЙ' : 'ИЗМЕРЕНИЕ СВЕТОВОЙ СРЕДЫ' }}</p>
+        <h1>{{ measurement.archive() ? 'Сохранённый свет.' : 'Картина света.' }} <span>{{ measurement.archive() ? 'Без подключения прибора.' : 'В реальном времени.' }}</span></h1>
+      </div>
       <div class="heading-actions">
-        <button type="button" class="button secondary" (click)="measurement.togglePause()">
-          @if (measurement.running()) {
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1"/></svg><span>Пауза</span>
-          } @else {
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 11 7-11 7Z"/></svg><span>Продолжить</span>
-          }
-        </button>
-        <button type="button" class="button secondary" (click)="measurement.toggleRecording()">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6"/></svg>
-          <span>{{ measurement.recordActive() ? 'Остановить запись' : 'Начать запись' }}</span>
-        </button>
+        @if (measurement.archive()) {
+          <button type="button" class="button secondary" (click)="closeFile()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 11 7-11 7Z"/></svg><span>Вернуться в live</span>
+          </button>
+        } @else {
+          <button type="button" class="button secondary" (click)="measurement.togglePause()">
+            @if (measurement.running()) {
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1"/></svg><span>Пауза</span>
+            } @else {
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 11 7-11 7Z"/></svg><span>Продолжить</span>
+            }
+          </button>
+          <button type="button" class="button secondary" (click)="measurement.toggleRecording()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6"/></svg>
+            <span>{{ measurement.recordActive() ? 'Остановить запись' : 'Начать запись' }}</span>
+          </button>
+        }
       </div>
     </section>
 
     <section class="metrics" aria-label="Текущие показания">
       <article class="metric-card metric-main">
-        <div class="metric-label"><span>{{ measurement.measurementType() === 'illuminance' ? 'ОСВЕЩЁННОСТЬ' : 'ЯРКОСТЬ' }}</span><span class="live-tag"><i></i>{{ measurement.running() ? 'LIVE' : 'PAUSE' }}</span></div>
+        <div class="metric-label"><span>{{ measurement.measurementType() === 'illuminance' ? 'ОСВЕЩЁННОСТЬ' : 'ЯРКОСТЬ' }}</span><span class="live-tag" [class.file]="measurement.archive()"><i></i>{{ measurement.modeLabel() }}</span></div>
         <div class="metric-value"><strong>{{ measurement.stats().mean.toFixed(1) }}</strong><span>{{ measurement.unit() }}</span></div>
         <div class="comfort-track"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
         <div class="metric-footer"><span>Интегральное среднее</span><strong>{{ measurement.stats().mean.toFixed(1) }} {{ measurement.unit() }}</strong></div>
@@ -62,15 +71,37 @@
       </article>
     </section>
 
+    @if (measurement.archive(); as archive) {
+      <section class="panel archive-panel" aria-label="Навигация по записи">
+        <div class="archive-summary">
+          <div><span class="eyebrow">ОТКРЫТЫЙ ФАЙЛ</span><strong>{{ archive.fileName }}</strong></div>
+          <span>{{ formatDate(archive.header.startedAt) }}</span>
+          <span>{{ archive.header.sampleCount }} отсчётов · {{ formatDuration(measurement.playbackDuration()) }}</span>
+        </div>
+        <div class="archive-controls">
+          <button type="button" class="icon-button" aria-label="Предыдущее окно" [disabled]="measurement.playbackOffset() === 0" (click)="measurement.stepPlayback(-1)">←</button>
+          <div class="timeline-field">
+            <div><strong>{{ formatDuration(measurement.playbackPosition()) }}</strong><span> / {{ formatDuration(measurement.playbackDuration()) }}</span></div>
+            <input type="range" min="0" [max]="measurement.playbackMaxOffset()" step="1" [ngModel]="measurement.playbackOffset()" (ngModelChange)="measurement.setPlaybackOffset($event)" aria-label="Позиция в записи" />
+          </div>
+          <button type="button" class="icon-button" aria-label="Следующее окно" [disabled]="measurement.playbackOffset() >= measurement.playbackMaxOffset()" (click)="measurement.stepPlayback(1)">→</button>
+          <label class="window-field"><span>Окно</span><select [ngModel]="measurement.playbackWindowSeconds()" (ngModelChange)="measurement.setPlaybackWindow($event)">
+            <option [value]="0.25">0,25 с</option><option [value]="0.5">0,5 с</option><option [value]="1">1 с</option><option [value]="2">2 с</option><option [value]="5">5 с</option>
+          </select></label>
+        </div>
+      </section>
+    }
+
     <section class="dashboard-grid">
       <div class="charts-column">
         <app-chart-panel
           kind="signal"
           title="Осциллограмма"
           description="Колесо — масштаб · перетаскивание — движение · наведение — значения"
-          meta="до 6000 Гц · 2048 точек"
+          [meta]="measurement.sampleRate() + ' Гц · ' + measurement.samples().length + ' точек'"
           [samples]="measurement.samples()"
           [sampleRate]="measurement.sampleRate()"
+          [timeOffset]="measurement.archive() ? measurement.playbackPosition() : 0"
           [unit]="measurement.unit()"
           (unitChange)="measurement.setMeasurementType($event === 'лк' ? 'illuminance' : 'luminance')" />
         <app-chart-panel
@@ -83,7 +114,7 @@
 
       <aside class="side-column">
         <article class="panel session-panel">
-          <header class="panel-header"><div><h2>Параметры сеанса</h2><p>Настройки текущего измерения</p></div></header>
+          <header class="panel-header"><div><h2>Параметры сеанса</h2><p>{{ measurement.archive() ? 'Повторный анализ сохранённого сигнала' : 'Настройки текущего измерения' }}</p></div></header>
           <label class="field"><span>Корректирующий множитель</span><div class="input-with-action"><input type="number" min="0.001" max="100" step="0.001" [ngModel]="measurement.correction()" (ngModelChange)="measurement.setCorrection($event)"/><button type="button" title="Сбросить" (click)="measurement.setCorrection(1)">1×</button></div></label>
           <label class="checkbox-field"><input type="checkbox" [ngModel]="measurement.filterEnabled()" (ngModelChange)="measurement.setFilterEnabled($event)"/><span>Цифровой НЧ-фильтр · 500 Гц</span></label>
           <label class="field"><span>Комментарий к измерению</span><textarea rows="3" placeholder="Например: рабочее место у окна" [ngModel]="measurement.comment()" (ngModelChange)="measurement.comment.set($event)"></textarea></label>
@@ -91,13 +122,23 @@
           <div class="session-info"><span>Частота дискретизации</span><strong>{{ measurement.sampleRate() }} Гц</strong></div>
         </article>
         <article class="panel export-panel">
-          <div class="recording-state"><span class="recording-dot" [class.active]="measurement.recordActive()"></span><div><strong>{{ measurement.recordActive() ? 'Идёт запись' : 'Запись не ведётся' }}</strong><small>{{ measurement.recordCount() }} точек сохранено</small></div></div>
-          <button type="button" class="button secondary full" [disabled]="measurement.recordCount() === 0" (click)="exportCsv()">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 18v3h16v-3"/></svg><span>Экспорт CSV</span>
+          <div class="recording-state"><span class="recording-dot" [class.active]="measurement.recordActive()"></span><div><strong>{{ measurement.archive() ? 'Открыт архив' : measurement.recordActive() ? 'Идёт запись' : 'Запись не ведётся' }}</strong><small>{{ measurement.archive() ? 'Полный поток доступен для анализа' : measurement.recordSampleCount() + ' отсчётов · ' + formatDuration(measurement.recordDuration()) }}</small></div></div>
+          @if (!measurement.archive()) {
+            <button type="button" class="button primary full" [disabled]="measurement.recordSampleCount() === 0" (click)="exportMeasurement()">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 18v3h16v-3"/></svg><span>Сохранить запись</span>
+            </button>
+            <button type="button" class="button secondary full" [disabled]="measurement.recordCount() === 0" (click)="exportCsv()">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 18v3h16v-3"/></svg><span>Экспорт сводки CSV</span>
+            </button>
+          }
+          <input #measurementFile type="file" accept=".lupinlab,application/octet-stream" hidden (change)="openMeasurementFile($event)" />
+          <button type="button" class="button secondary full" (click)="measurementFile.click()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V4h6l2 3h8v13H4Z"/></svg><span>Открыть запись</span>
           </button>
+          <p class="file-note">Файл .lupinlab содержит исходные отсчёты float32 и метаданные. Обработка выполняется локально.</p>
         </article>
         @if (!serial.supported) {
-          <article class="browser-note"><strong>Web Serial недоступен</strong><br>Для подключения прибора используйте Chrome или Edge. Демо-режим и анализ данных работают без ограничений.</article>
+          <article class="browser-note"><strong>Web Serial недоступен</strong><br>Для подключения прибора используйте Chrome или Edge. Демо-режим и анализ сохранённых данных работают без ограничений.</article>
         }
       </aside>
     </section>

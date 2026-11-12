@@ -162,9 +162,9 @@ export class SignalChart extends BaseChart {
     super(host, "lupin-signal");
   }
 
-  update(samples: SampleArray, sampleRate: number, unit = "лк"): void {
+  update(samples: SampleArray, sampleRate: number, unit = "лк", timeOffset = 0): void {
     const points: [number, number][] = [];
-    for (let i = 0; i < samples.length; i++) points.push([i / sampleRate, samples[i]]);
+    for (let i = 0; i < samples.length; i++) points.push([timeOffset + i / sampleRate, samples[i]]);
     const stats = signalStats(samples);
     const average = points.map(([time]) => [time, stats.mean] as [number, number]);
 
@@ -175,8 +175,8 @@ export class SignalChart extends BaseChart {
         name: "Время, с",
         nameLocation: "middle",
         nameGap: 26,
-        min: 0,
-        max: Math.max(1 / sampleRate, (samples.length - 1) / sampleRate),
+        min: timeOffset,
+        max: timeOffset + Math.max(1 / sampleRate, (samples.length - 1) / sampleRate),
         axisLabel: { color: COLORS.text, fontSize: 10, formatter: (value: number) => value.toFixed(2) },
         nameTextStyle: { color: COLORS.text, fontSize: 9 },
         axisLine: { lineStyle: { color: "#354640" } },

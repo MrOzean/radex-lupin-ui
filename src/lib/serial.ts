@@ -54,22 +54,34 @@ export class SerialConnection extends EventTarget {
   }
 
   private async readLoop(): Promise<void> {
-    if (!this.port?.readable) return;
+    if (!this.port?.readable) {
+      await this.handleConnectionLoss("Порт не предоставил поток чтения");
+      return;
+    }
     this.reader = this.port.readable.getReader();
+    let lossReason: string | null = null;
     try {
       while (!this.closing) {
         const { value, done } = await this.reader.read();
-        if (done) break;
+        if (done) {
+          if (!this.closing) lossReason = "Устройство завершило поток данных";
+          break;
+        }
         if (value?.length) {
           this.log("rx", value);
           this.dispatchEvent(new CustomEvent("data", { detail: value }));
         }
       }
     } catch (error) {
-      if (!this.closing) this.log("system", `Ошибка чтения: ${errorMessage(error)}`);
+      if (!this.closing) lossReason = errorMessage(error);
     } finally {
-      this.reader?.releaseLock();
+      try {
+        this.reader?.releaseLock();
+      } catch {
+        // The browser may already have released the reader after a USB disconnect.
+      }
       this.reader = null;
+      if (lossReason) await this.handleConnectionLoss(lossReason);
     }
   }
 
@@ -80,21 +92,49 @@ export class SerialConnection extends EventTarget {
   }
 
   async disconnect(): Promise<void> {
+    if (!this.port) return;
     this.closing = true;
-    await this.reader?.cancel();
-    this.reader?.releaseLock();
-    this.reader = null;
-    if (this.readTask) await this.readTask;
-    this.writer?.releaseLock();
-    this.writer = null;
     try {
-      await this.port?.close();
+      await this.reader?.cancel();
+      if (this.readTask) await this.readTask;
+      try {
+        this.writer?.releaseLock();
+      } catch {
+        // A pending browser write can release the lock during shutdown.
+      }
+      this.writer = null;
+      await this.port.close();
     } finally {
       this.port = null;
+      this.reader = null;
+      this.writer = null;
+      this.readTask = null;
       this.state = "disconnected";
       this.log("system", "Порт закрыт");
       this.emitState();
     }
+  }
+
+  private async handleConnectionLoss(reason: string): Promise<void> {
+    if (this.state === "disconnected") return;
+    this.closing = true;
+    this.log("system", `Соединение потеряно: ${reason}`);
+    try {
+      this.writer?.releaseLock();
+    } catch {
+      // The writer lock can already be released by the browser.
+    }
+    this.writer = null;
+    try {
+      await this.port?.close();
+    } catch {
+      // A physically disconnected port commonly cannot be closed cleanly.
+    }
+    this.port = null;
+    this.readTask = null;
+    this.state = "disconnected";
+    this.emitState();
+    this.dispatchEvent(new CustomEvent<string>("connectionloss", { detail: reason }));
   }
 
   private log(direction: SerialLogEntry["direction"], data: Uint8Array | string): void {

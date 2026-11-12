@@ -131,6 +131,11 @@ export class MeasurementService implements OnDestroy {
   constructor() {
     this.demo.packets.subscribe((chunk) => this.processChunk(chunk));
     this.serial.packets.subscribe((chunk) => this.processChunk(chunk));
+    this.serial.connectionLoss.subscribe(() => {
+      this.stopRecording();
+      this.running.set(false);
+      this.lastPacketAt.set(null);
+    });
     this.demo.start();
     this.running.set(true);
   }

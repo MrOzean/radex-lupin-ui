@@ -19,6 +19,12 @@ export class AppComponent {
   private readonly terminal = viewChild(TerminalDialogComponent);
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
 
+  constructor() {
+    this.serial.connectionLoss.subscribe((reason) => {
+      this.showToast(`LUPIN отключён: ${reason}. Уже записанные данные сохранены.`);
+    });
+  }
+
   async connect(): Promise<void> {
     try {
       if (this.serial.state() === "connected") {

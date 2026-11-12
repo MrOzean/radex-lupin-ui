@@ -27,11 +27,15 @@ export class SerialService {
     resyncEvents: 0,
   });
   readonly packets = new Subject<DemoChunk>();
+  readonly connectionLoss = new Subject<string>();
   readonly supported = SerialConnection.supported();
 
   constructor() {
     this.connection.addEventListener("state", (event) => {
       this.state.set((event as CustomEvent<SerialState>).detail);
+    });
+    this.connection.addEventListener("connectionloss", (event) => {
+      this.connectionLoss.next((event as CustomEvent<string>).detail);
     });
     this.connection.addEventListener("data", (event) => {
       this.parser.push((event as CustomEvent<Uint8Array>).detail);

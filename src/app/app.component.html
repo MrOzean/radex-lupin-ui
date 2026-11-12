@@ -47,15 +47,13 @@
     </section>
 
     <section class="metrics" aria-label="Текущие показания">
-      <article class="metric-card metric-main" [class.zone-good]="measurement.measurementType() === 'illuminance' && measurement.illumination().tone === 'good'" [class.zone-warning]="measurement.measurementType() === 'illuminance' && measurement.illumination().tone === 'warning'">
+      <article class="metric-card metric-main" [class.zone-good]="measurement.levelAssessment().tone === 'good'" [class.zone-warning]="measurement.levelAssessment().tone === 'warning'">
         <div class="metric-label"><span>{{ measurement.measurementType() === 'illuminance' ? 'ОСВЕЩЁННОСТЬ' : 'ЯРКОСТЬ' }}</span><span class="live-tag" [class.file]="measurement.archive()"><i></i>{{ measurement.modeLabel() }}</span></div>
         <div class="metric-value"><strong>{{ measurement.stats().mean.toFixed(1) }}</strong><span>{{ measurement.unit() }}</span></div>
-        @if (measurement.measurementType() === 'illuminance') {
-          <div class="comfort-track" [class.good]="measurement.illumination().tone === 'good'" [class.warning]="measurement.illumination().tone === 'warning'" role="img" [attr.aria-label]="measurement.illumination().text">
-            @for (active of measurement.illumination().segments; track $index) {<i [class.active]="active"></i>}
-          </div>
-          <div class="comfort-caption"><span>Диапазон освещённости</span><strong>{{ measurement.illumination().text }}</strong></div>
-        }
+        <div class="comfort-track" [class.good]="measurement.levelAssessment().tone === 'good'" [class.warning]="measurement.levelAssessment().tone === 'warning'" role="img" [attr.aria-label]="measurement.levelAssessment().text">
+          @for (active of measurement.levelAssessment().segments; track $index) {<i [class.active]="active"></i>}
+        </div>
+        <div class="comfort-caption"><span>{{ measurement.measurementType() === 'illuminance' ? 'Диапазон освещённости' : 'Диапазон яркости' }}</span><strong>{{ measurement.levelAssessment().text }}</strong></div>
         <div class="metric-footer"><span>Интегральное среднее</span><strong>{{ measurement.stats().mean.toFixed(1) }} {{ measurement.unit() }}</strong></div>
       </article>
       <article class="metric-card" [class.zone-good]="measurement.flickerAssessment().tone === 'good'" [class.zone-warning]="measurement.flickerAssessment().tone === 'warning'" [class.zone-danger]="measurement.flickerAssessment().tone === 'danger'">

@@ -76,14 +76,20 @@ export class MeasurementService implements OnDestroy {
     if (state === "archive") return "Архивный сигнал";
     return "Источник остановлен";
   });
-  readonly illumination = computed(() => {
-    const lux = this.stats().mean;
+  readonly levelAssessment = computed(() => {
+    const value = this.stats().mean;
     if (this.samples().length === 0 || this.stats().maximum <= 0) {
       return { tone: "idle", text: "Нет сигнала", segments: Array<boolean>(12).fill(false) };
     }
-    const active = Math.max(1, Math.round(12 * Math.min(1, Math.log10(lux + 1) / 4)));
-    const inGreenZone = lux >= 300 && lux <= 2000;
-    const text = inGreenZone ? "Зелёная зона · 300–2000 лк" : lux < 300 ? "Ниже 300 лк" : "Выше 2000 лк";
+    // Visual approximation of RadexLight zones; exact luminance limits still need verification.
+    const luminance = this.measurementType() === "luminance";
+    const minimum = luminance ? 50 : 300;
+    const maximum = luminance ? 1000 : 2000;
+    const active = Math.max(1, Math.round(12 * Math.min(1, Math.log10(value + 1) / 4)));
+    const inGreenZone = value >= minimum && value <= maximum;
+    const text = inGreenZone
+      ? `Зелёная зона · ${minimum}–${maximum} ${this.unit()}`
+      : value < minimum ? `Ниже ${minimum} ${this.unit()}` : `Выше ${maximum} ${this.unit()}`;
     return {
       tone: inGreenZone ? "good" : "warning",
       text,

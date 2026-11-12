@@ -82,12 +82,12 @@ export class SerialService {
     this.rpcParser.reset();
   }
 
-  async ping(): Promise<EkosferaFrame> {
+  async ping(address = 0xff): Promise<EkosferaFrame> {
     if (this.state() !== "connected") throw new Error("Порт не открыт");
     const sequence = this.rpcSequence;
     this.rpcSequence = (this.rpcSequence + 1) & 0xffff;
     const request = encodeEkosferaRequest({
-      address: 0xff,
+      address,
       command: EkosferaRpcId.ping,
       sequence,
       payload: new Uint8Array(0),

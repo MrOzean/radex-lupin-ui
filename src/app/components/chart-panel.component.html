@@ -29,6 +29,6 @@
     </div>
   </header>
   <div class="chart-wrap" [class.spectrum]="kind() === 'spectrum'">
-    <div #host class="chart"></div>
+    <div #host class="chart" role="region" [attr.aria-label]="title() + '. Интерактивный график с масштабированием'"></div>
   </div>
 </article>

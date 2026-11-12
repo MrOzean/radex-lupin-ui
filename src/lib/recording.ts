@@ -16,6 +16,7 @@ export interface MeasurementRow {
 export interface RecordingExportOptions {
   measurementType: MeasurementType;
   lightingProfileId: string;
+  spectrumMaxFrequency: number;
   correction: number;
   filterEnabled: boolean;
   comment: string;
@@ -113,6 +114,7 @@ export class Recording {
         sampleCount: samples.length,
         measurementType: options.measurementType,
         lightingProfileId: options.lightingProfileId,
+        spectrumMaxFrequency: options.spectrumMaxFrequency,
         correction: options.correction,
         filterEnabled: options.filterEnabled,
         comment: options.comment.trim(),

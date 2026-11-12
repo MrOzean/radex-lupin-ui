@@ -231,6 +231,7 @@ export type SpectrumView = "line" | "bars" | "candles";
 
 export class SpectrumChart extends BaseChart {
   private bins: readonly SpectrumBin[] = [];
+  private maxFrequency = 0;
   private view: SpectrumView = "bars";
 
   constructor(host: HTMLElement) {
@@ -241,11 +242,12 @@ export class SpectrumChart extends BaseChart {
     if (this.view === view) return;
     this.view = view;
     this.chart.clear();
-    this.update(this.bins);
+    this.update(this.bins, this.maxFrequency);
   }
 
-  update(bins: readonly SpectrumBin[]): void {
+  update(bins: readonly SpectrumBin[], maxFrequency = 0): void {
     this.bins = bins;
+    this.maxFrequency = maxFrequency;
     const points = bins.map((bin) => [bin.frequency, bin.decibels] as [number, number]);
     const bars = this.view === "bars";
     const valueOffset = bars ? 100 : 0;
@@ -294,7 +296,7 @@ export class SpectrumChart extends BaseChart {
         nameLocation: "middle",
         nameGap: 26,
         min: 0,
-        max: Math.max(1, bins.at(-1)?.frequency ?? 3000),
+        max: Math.max(1, maxFrequency || bins.at(-1)?.frequency || 3000),
         axisLabel: { color: COLORS.text, fontSize: 10, formatter: (value: number) => value.toFixed(0) },
         nameTextStyle: { color: COLORS.text, fontSize: 9 },
         axisLine: { lineStyle: { color: "#354640" } },

@@ -39,7 +39,9 @@ export class MeasurementService implements OnDestroy {
   readonly stats = signal<SignalStats>({ minimum: 0, maximum: 0, mean: 0, flickerPercent: 0 });
   readonly samples = signal<SampleArray>([]);
   readonly spectrum = signal<readonly SpectrumBin[]>([]);
+  readonly spectrumMaxFrequency = signal(3000);
   readonly sampleRate = signal(2000);
+  readonly spectrumLimit = computed(() => Math.min(this.spectrumMaxFrequency(), this.sampleRate() / 2));
   readonly running = signal(false);
   readonly correction = signal(1);
   readonly measurementType = signal<MeasurementType>("illuminance");
@@ -210,6 +212,13 @@ export class MeasurementService implements OnDestroy {
     this.renderPlayback();
   }
 
+  setSpectrumMaxFrequency(value: number): void {
+    if (!Number.isFinite(value) || value <= 0) return;
+    this.spectrumMaxFrequency.set(value);
+    if (this.archive()) this.renderPlayback();
+    else this.spectrum.set(powerSpectrum(this.samples(), this.sampleRate(), value));
+  }
+
   toggleRecording(): void {
     if (this.archive()) return;
     if (this.recorder.active) {
@@ -253,6 +262,7 @@ export class MeasurementService implements OnDestroy {
     const binary = this.recorder.toBinary({
       measurementType: this.measurementType(),
       lightingProfileId: this.lightingProfileId(),
+      spectrumMaxFrequency: this.spectrumMaxFrequency(),
       correction: this.correction(),
       filterEnabled: this.filterEnabled(),
       comment: this.comment(),
@@ -273,6 +283,7 @@ export class MeasurementService implements OnDestroy {
     this.sampleRate.set(data.header.sampleRate);
     this.measurementType.set(data.header.measurementType);
     this.setLightingProfile(data.header.lightingProfileId ?? DEFAULT_LIGHTING_PROFILE_ID);
+    this.spectrumMaxFrequency.set(data.header.spectrumMaxFrequency ?? 3000);
     this.correction.set(data.header.correction);
     this.filterEnabled.set(data.header.filterEnabled);
     this.comment.set(data.header.comment);
@@ -356,7 +367,7 @@ export class MeasurementService implements OnDestroy {
     const visible = this.buffer.slice(this.buffer.length - this.sampleCount);
     const analysisSamples = processed.length > this.buffer.length ? processed : visible;
     const stats = signalStats(analysisSamples);
-    const spectrum = powerSpectrum(analysisSamples, chunk.sampleRate);
+    const spectrum = powerSpectrum(analysisSamples, chunk.sampleRate, this.spectrumMaxFrequency());
     const dominant = dominantFrequencies(spectrum);
     this.samples.set(visible);
     this.sampleRate.set(chunk.sampleRate);
@@ -394,7 +405,7 @@ export class MeasurementService implements OnDestroy {
       const filtered = new LowPassFilter(this.sampleRate()).process(correctedInput);
       processed = filtered.slice(offset - warmupOffset);
     }
-    const spectrum = powerSpectrum(processed, this.sampleRate());
+    const spectrum = powerSpectrum(processed, this.sampleRate(), this.spectrumMaxFrequency());
     this.samples.set(processed);
     this.stats.set(signalStats(processed));
     this.spectrum.set(spectrum);
@@ -410,6 +421,7 @@ export class MeasurementService implements OnDestroy {
     this.correction.set(1);
     this.measurementType.set("illuminance");
     this.lightingProfileId.set(DEFAULT_LIGHTING_PROFILE_ID);
+    this.spectrumMaxFrequency.set(3000);
     this.filterEnabled.set(true);
     this.comment.set("");
   }

@@ -8,7 +8,7 @@
   </div>
   <pre class="terminal-log">{{ logs().length ? logs().join('\n') : emptyText }}</pre>
   <form class="send-form" (ngSubmit)="send()">
-    <input [(ngModel)]="hex" name="hex" spellcheck="false" placeholder="HEX, например: 55 AA 01 00" [disabled]="state() !== 'connected'" />
+    <input [(ngModel)]="hex" name="hex" aria-label="HEX-команда" spellcheck="false" placeholder="HEX, например: 55 AA 01 00" [disabled]="state() !== 'connected'" />
     <button class="button primary" [disabled]="state() !== 'connected'">Отправить</button>
   </form>
   <footer>

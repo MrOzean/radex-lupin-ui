@@ -17,6 +17,7 @@ export interface MeasurementFileHeader {
   sampleCount: number;
   measurementType: MeasurementType;
   lightingProfileId?: string;
+  spectrumMaxFrequency?: number;
   correction: number;
   filterEnabled: boolean;
   comment: string;
@@ -132,6 +133,9 @@ function validateHeader(header: MeasurementFileHeader, actualSampleCount?: numbe
   }
   if (header.lightingProfileId !== undefined && typeof header.lightingProfileId !== "string") {
     throw new Error("Некорректный профиль освещения");
+  }
+  if (header.spectrumMaxFrequency !== undefined && (!Number.isFinite(header.spectrumMaxFrequency) || header.spectrumMaxFrequency <= 0)) {
+    throw new Error("Некорректный диапазон спектра");
   }
   if (header.device !== null && (typeof header.device !== "object" || typeof header.device.name !== "string")) {
     throw new Error("Некорректные метаданные прибора");

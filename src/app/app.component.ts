@@ -79,6 +79,15 @@ export class AppComponent {
     }
   }
 
+  async ping(): Promise<void> {
+    try {
+      const response = await this.serial.ping();
+      this.showToast(`RPC ping успешен · sequence ${response.sequence}`);
+    } catch (error) {
+      this.showToast(errorMessage(error));
+    }
+  }
+
   openTerminal(): void {
     this.terminal()?.open();
   }

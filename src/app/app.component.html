@@ -222,5 +222,6 @@
   [logs]="serial.logs()"
   [state]="serial.state()"
   (writeHex)="writeHex($event)"
+  (ping)="ping()"
   (cleared)="serial.clearLogs()" />
 <div class="toast" [class.visible]="toast().length > 0" role="status">{{ toast() }}</div>

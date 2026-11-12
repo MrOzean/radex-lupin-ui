@@ -12,6 +12,7 @@ export class TerminalDialogComponent {
   readonly logs = input<readonly string[]>([]);
   readonly state = input<SerialState>("disconnected");
   readonly writeHex = output<string>();
+  readonly ping = output<void>();
   readonly cleared = output<void>();
   readonly emptyText = "Журнал пуст. Подключите Lupin или откройте порт.";
   private readonly dialog = viewChild<ElementRef<HTMLDialogElement>>("dialog");

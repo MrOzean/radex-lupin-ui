@@ -74,6 +74,46 @@ export function decodeEkosferaFrame(input: Uint8Array): EkosferaFrame {
   };
 }
 
+export class EkosferaStreamParser extends EventTarget {
+  private buffer = new Uint8Array(0);
+
+  reset(): void {
+    this.buffer = new Uint8Array(0);
+  }
+
+  push(chunk: Uint8Array): void {
+    if (chunk.length === 0) return;
+    const joined = new Uint8Array(this.buffer.length + chunk.length);
+    joined.set(this.buffer);
+    joined.set(chunk, this.buffer.length);
+    this.buffer = joined;
+
+    while (this.buffer.length > 0) {
+      const marker = this.buffer.indexOf(EKOSFERA_RESPONSE_MARKER);
+      if (marker < 0) {
+        this.buffer = new Uint8Array(0);
+        return;
+      }
+      if (marker > 0) this.buffer = this.buffer.slice(marker);
+      if (this.buffer.length < 6) return;
+      const dataSize = this.buffer[4] | (this.buffer[5] << 8);
+      if (dataSize === 1 || dataSize % 2 !== 0 || dataSize > 502) {
+        this.buffer = this.buffer.slice(1);
+        continue;
+      }
+      const frameSize = EKOSFERA_HEADER_BYTES + dataSize;
+      if (this.buffer.length < frameSize) return;
+      try {
+        const frame = decodeEkosferaFrame(this.buffer.subarray(0, frameSize));
+        this.buffer = this.buffer.slice(frameSize);
+        this.dispatchEvent(new CustomEvent<EkosferaFrame>("frame", { detail: frame }));
+      } catch {
+        this.buffer = this.buffer.slice(1);
+      }
+    }
+  }
+}
+
 export function encodeRateSet(baudRate: number, address = 0xff, sequence = 0): Uint8Array {
   if (!Number.isSafeInteger(baudRate) || baudRate <= 0 || baudRate > 0xffffffff) {
     throw new Error("Некорректная скорость UART");

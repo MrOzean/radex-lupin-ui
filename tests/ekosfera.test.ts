@@ -6,6 +6,7 @@ import {
   encodeEkosferaRequest,
   encodeRateSet,
   EkosferaRpcId,
+  EkosferaStreamParser,
   ekosferaChecksum,
 } from "../src/lib/ekosfera.ts";
 
@@ -57,4 +58,23 @@ test("decoder rejects header, payload and size corruption", () => {
   assert.throws(() => decodeEkosferaFrame(badPayload), /данных/);
   assert.throws(() => decodeEkosferaFrame(valid.slice(0, -1)), /Размер/);
   assert.throws(() => encodeEkosferaRequest({ address: 0xff, command: 0, sequence: 0, payload: new Uint8Array(1) }), /чётный/);
+});
+
+test("stream parser recovers response frames from partial and noisy reads", () => {
+  const parser = new EkosferaStreamParser();
+  const frames: unknown[] = [];
+  parser.addEventListener("frame", (event) => frames.push((event as CustomEvent<unknown>).detail));
+  const response = encodeRateSet(921600, 0xff, 9);
+  response[0] = EKOSFERA_RESPONSE_MARKER;
+  new DataView(response.buffer).setUint16(10, ekosferaChecksum(response.subarray(0, 10)), true);
+  const noisy = new Uint8Array(3 + response.length);
+  noisy.set([1, 2, 3], 0);
+  noisy.set(response, 3);
+
+  parser.push(noisy.subarray(0, 8));
+  parser.push(noisy.subarray(8, 13));
+  parser.push(noisy.subarray(13));
+
+  assert.equal(frames.length, 1);
+  assert.equal((frames[0] as { sequence: number }).sequence, 9);
 });

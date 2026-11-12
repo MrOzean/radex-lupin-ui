@@ -7,7 +7,7 @@ import {
   type MeasurementFileData,
   type MeasurementType,
 } from "../../lib/measurement-file";
-import { downloadBlob, downloadText, Recording } from "../../lib/recording";
+import { downloadBlob, downloadText, Recording, samplesToCsv } from "../../lib/recording";
 import { DemoService } from "./demo.service";
 import { SerialService } from "./serial.service";
 
@@ -139,9 +139,23 @@ export class MeasurementService {
   }
 
   exportCsv(): void {
-    if (this.archive() || this.recorder.count === 0) return;
+    const archive = this.archive();
     const comment = this.comment().trim();
     const prefix = comment ? `# ${comment}\r\n` : "";
+    if (archive) {
+      if (this.samples().length === 0) return;
+      const csv = samplesToCsv({
+        samples: this.samples(),
+        sampleRate: this.sampleRate(),
+        startedAt: archive.header.startedAt,
+        sampleOffset: this.playbackOffset(),
+        unit: this.unit(),
+      });
+      const baseName = archive.fileName.replace(/\.lupinlab$/i, "");
+      downloadText(prefix + csv, `${baseName}-window-${this.playbackPosition().toFixed(3)}s.csv`);
+      return;
+    }
+    if (this.recorder.count === 0) return;
     downloadText(prefix + this.recorder.toCsv(this.unit()), `lupin-${fileTimestamp()}.csv`);
   }
 

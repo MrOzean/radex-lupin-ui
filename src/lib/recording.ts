@@ -1,3 +1,4 @@
+import type { SampleArray } from "./analysis";
 import {
   encodeMeasurementFile,
   type DeviceMetadata,
@@ -123,6 +124,27 @@ export class Recording {
   toBinary(options: RecordingExportOptions): ArrayBuffer {
     return encodeMeasurementFile(this.toMeasurementFile(options));
   }
+}
+
+export interface SamplesCsvOptions {
+  samples: SampleArray;
+  sampleRate: number;
+  startedAt: string;
+  sampleOffset: number;
+  unit: string;
+}
+
+export function samplesToCsv(options: SamplesCsvOptions): string {
+  const valueColumn = options.unit === "лк" ? "illuminance_lux" : "luminance_cd_m2";
+  const lines = ["sample_index;timestamp;time_seconds;" + valueColumn];
+  const startedAt = Date.parse(options.startedAt);
+  for (let i = 0; i < options.samples.length; i++) {
+    const sampleIndex = options.sampleOffset + i;
+    const timeSeconds = sampleIndex / options.sampleRate;
+    const timestamp = new Date(startedAt + timeSeconds * 1000).toISOString();
+    lines.push(`${sampleIndex};${timestamp};${timeSeconds.toFixed(6)};${options.samples[i].toFixed(6)}`);
+  }
+  return `\uFEFF${lines.join("\r\n")}`;
 }
 
 export function downloadBlob(data: BlobPart, filename: string, type: string): void {

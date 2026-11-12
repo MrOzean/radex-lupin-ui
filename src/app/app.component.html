@@ -130,6 +130,10 @@
             <button type="button" class="button secondary full" [disabled]="measurement.recordCount() === 0" (click)="exportCsv()">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 18v3h16v-3"/></svg><span>Экспорт сводки CSV</span>
             </button>
+          } @else {
+            <button type="button" class="button secondary full" [disabled]="measurement.samples().length === 0" (click)="exportCsv()">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 18v3h16v-3"/></svg><span>Экспорт окна CSV</span>
+            </button>
           }
           <input #measurementFile type="file" accept=".lupinlab,application/octet-stream" hidden (change)="openMeasurementFile($event)" />
           <button type="button" class="button secondary full" (click)="measurementFile.click()">

@@ -158,7 +158,7 @@ abstract class BaseChart {
     this.crossH.style.cssText =
       "position:absolute;display:none;pointer-events:none;z-index:6;" +
       "top:50px;left:58px;width:calc(100% - 80px);height:0;" +
-      "border-top:1px dashed rgba(154,181,176,0.7);";
+      "border-top:1px dashed #61776f;";
     host.style.position = "relative";
     host.append(this.crossH);
     host.addEventListener("mousemove", this.onCrossMove);

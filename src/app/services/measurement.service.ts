@@ -33,6 +33,7 @@ export class MeasurementService implements OnDestroy {
   private sampleCount = 0;
   private lastRecorded = 0;
   private lowPass = new LowPassFilter(2000);
+  private activeScale: number | null = null;
   private readonly streamClock = signal(Date.now());
   private readonly streamTimer = setInterval(() => this.streamClock.set(Date.now()), 500);
 
@@ -364,6 +365,12 @@ export class MeasurementService implements OnDestroy {
     }
 
     const scale = this.displayScale();
+    if (scale !== this.activeScale) {
+      // Unit switch (lx -> cd/m²) or coefficient change: drop the buffered
+      // window so the chart restarts in the new scale instead of jumping.
+      this.activeScale = scale;
+      this.sampleCount = 0;
+    }
     const corrected = scale === 1
       ? chunk.samples
       : chunk.samples.map((value) => value * scale);

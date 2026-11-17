@@ -19,6 +19,7 @@ export interface MeasurementFileHeader {
   lightingProfileId?: string;
   spectrumMaxFrequency?: number;
   correction: number;
+  luminanceDivisor?: number;
   filterEnabled: boolean;
   comment: string;
   source: string;
@@ -119,6 +120,9 @@ function validateHeader(header: MeasurementFileHeader, actualSampleCount?: numbe
   }
   if (!Number.isFinite(header.correction) || header.correction <= 0) {
     throw new Error("Некорректный корректирующий множитель");
+  }
+  if (header.luminanceDivisor !== undefined && (!Number.isFinite(header.luminanceDivisor) || header.luminanceDivisor <= 0)) {
+    throw new Error("Некорректный коэффициент пересчёта яркости");
   }
   if (header.measurementType !== "illuminance" && header.measurementType !== "luminance") {
     throw new Error("Неизвестный тип измерения");

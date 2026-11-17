@@ -20,6 +20,7 @@ function header(sampleCount: number): MeasurementFileHeader {
     lightingProfileId: "office",
     spectrumMaxFrequency: 1000,
     correction: 1.25,
+    luminanceDivisor: 3.4,
     filterEnabled: true,
     comment: "Рабочее место у окна",
     source: "RADEX LUPIN · Web Serial",
@@ -63,4 +64,16 @@ test("encoder rejects inconsistent sample count", () => {
     () => encodeMeasurementFile({ header: header(2), samples: new Float32Array(1) }),
     /Количество отсчётов/,
   );
+});
+
+test("decoder rejects a non-positive luminance divisor", () => {
+  const samples = new Float32Array(4);
+  const badHeader = JSON.stringify({ ...header(samples.length), luminanceDivisor: 0 });
+  const headerBytes = new TextEncoder().encode(badHeader);
+  const binary = new Uint8Array(12 + headerBytes.length + samples.byteLength);
+  binary.set(new TextEncoder().encode("LUPINLAB"), 0);
+  new DataView(binary.buffer).setUint32(8, headerBytes.length, true);
+  binary.set(headerBytes, 12);
+  binary.set(new Uint8Array(samples.buffer), 12 + headerBytes.length);
+  assert.throws(() => decodeMeasurementFile(binary), /яркости/);
 });

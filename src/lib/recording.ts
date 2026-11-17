@@ -18,6 +18,7 @@ export interface RecordingExportOptions {
   lightingProfileId: string;
   spectrumMaxFrequency: number;
   correction: number;
+  luminanceDivisor?: number;
   filterEnabled: boolean;
   comment: string;
   endedAt?: Date;
@@ -116,6 +117,7 @@ export class Recording {
         lightingProfileId: options.lightingProfileId,
         spectrumMaxFrequency: options.spectrumMaxFrequency,
         correction: options.correction,
+        luminanceDivisor: options.luminanceDivisor,
         filterEnabled: options.filterEnabled,
         comment: options.comment.trim(),
         source: this.source,

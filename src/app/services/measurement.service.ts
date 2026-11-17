@@ -43,7 +43,12 @@ export class MeasurementService implements OnDestroy {
   readonly sampleRate = signal(2000);
   readonly spectrumLimit = computed(() => Math.min(this.spectrumMaxFrequency(), this.sampleRate() / 2));
   readonly running = signal(false);
-  readonly correction = signal(1);
+  readonly correction = signal(loadNumberSetting("lupin-correction", 1));
+  /** Luminance conversion factor recovered from the LUPIN USB serial string (lumDiv). */
+  readonly luminanceDivisor = signal(loadNumberSetting("lupin-luminance-divisor", 3.4));
+  /** Combined display scale: correction × (luminance ? luminanceDivisor : 1). */
+  readonly displayScale = computed(() =>
+    this.correction() * (this.measurementType() === "luminance" ? this.luminanceDivisor() : 1));
   readonly measurementType = signal<MeasurementType>("illuminance");
   readonly lightingProfiles = LIGHTING_PROFILES;
   readonly lightingProfileId = signal(DEFAULT_LIGHTING_PROFILE_ID);
@@ -194,12 +199,22 @@ export class MeasurementService implements OnDestroy {
   setCorrection(value: number): void {
     if (Number.isFinite(value) && value > 0) {
       this.correction.set(value);
+      saveNumberSetting("lupin-correction", value);
+      this.renderPlayback();
+    }
+  }
+
+  setLuminanceDivisor(value: number): void {
+    if (Number.isFinite(value) && value > 0) {
+      this.luminanceDivisor.set(value);
+      saveNumberSetting("lupin-luminance-divisor", value);
       this.renderPlayback();
     }
   }
 
   setMeasurementType(type: MeasurementType): void {
     this.measurementType.set(type);
+    this.renderPlayback();
   }
 
   setLightingProfile(id: string): void {
@@ -264,6 +279,7 @@ export class MeasurementService implements OnDestroy {
       lightingProfileId: this.lightingProfileId(),
       spectrumMaxFrequency: this.spectrumMaxFrequency(),
       correction: this.correction(),
+      luminanceDivisor: this.luminanceDivisor(),
       filterEnabled: this.filterEnabled(),
       comment: this.comment(),
     });
@@ -284,7 +300,8 @@ export class MeasurementService implements OnDestroy {
     this.measurementType.set(data.header.measurementType);
     this.setLightingProfile(data.header.lightingProfileId ?? DEFAULT_LIGHTING_PROFILE_ID);
     this.spectrumMaxFrequency.set(data.header.spectrumMaxFrequency ?? 3000);
-    this.correction.set(data.header.correction);
+    this.setCorrection(data.header.correction);
+    this.setLuminanceDivisor(data.header.luminanceDivisor ?? 3.4);
     this.filterEnabled.set(data.header.filterEnabled);
     this.comment.set(data.header.comment);
     this.playbackWindowSize.set(Math.max(1, Math.round(data.header.sampleRate)));
@@ -346,9 +363,10 @@ export class MeasurementService implements OnDestroy {
       }
     }
 
-    const corrected = this.correction() === 1
+    const scale = this.displayScale();
+    const corrected = scale === 1
       ? chunk.samples
-      : chunk.samples.map((value) => value * this.correction());
+      : chunk.samples.map((value) => value * scale);
     const processed = this.filterEnabled() ? this.lowPass.process(corrected) : corrected;
 
     if (this.buffer.length !== chunk.sampleRate) {
@@ -393,15 +411,16 @@ export class MeasurementService implements OnDestroy {
     const offset = Math.min(this.playbackOffset(), this.playbackMaxOffset());
     const end = Math.min(archive.samples.length, offset + this.playbackWindowSize());
     const raw = archive.samples.slice(offset, end);
-    let processed = this.correction() === 1
+    const scale = this.displayScale();
+    let processed = scale === 1
       ? raw
-      : raw.map((value) => value * this.correction());
+      : raw.map((value) => value * scale);
     if (this.filterEnabled()) {
       const warmupOffset = Math.max(0, offset - 100);
       const filterInput = archive.samples.slice(warmupOffset, end);
-      const correctedInput = this.correction() === 1
+      const correctedInput = scale === 1
         ? filterInput
-        : filterInput.map((value) => value * this.correction());
+        : filterInput.map((value) => value * scale);
       const filtered = new LowPassFilter(this.sampleRate()).process(correctedInput);
       processed = filtered.slice(offset - warmupOffset);
     }
@@ -418,12 +437,32 @@ export class MeasurementService implements OnDestroy {
   }
 
   private resetSessionSettings(): void {
-    this.correction.set(1);
+    this.setCorrection(1);
+    this.setLuminanceDivisor(3.4);
     this.measurementType.set("illuminance");
     this.lightingProfileId.set(DEFAULT_LIGHTING_PROFILE_ID);
     this.spectrumMaxFrequency.set(3000);
     this.filterEnabled.set(true);
     this.comment.set("");
+  }
+}
+
+function loadNumberSetting(key: string, fallback: number): number {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null) return fallback;
+    const value = Number(raw);
+    return Number.isFinite(value) && value > 0 ? value : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveNumberSetting(key: string, value: number): void {
+  try {
+    localStorage.setItem(key, String(value));
+  } catch {
+    // Storage can be unavailable in private mode; the in-memory value still works.
   }
 }
 

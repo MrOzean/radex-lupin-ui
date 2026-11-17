@@ -149,11 +149,13 @@ abstract class BaseChart {
     // Custom crosshair overlay: ECharts 6.1 lost the built-in 'cross'
     // axisPointer shape (upstream regression), so we track the cursor with
     // two plain divs driven by DOM mouse events. The native axisPointer
-    // stays 'line' for tooltip values.
+    // stays 'line' for tooltip values. Styles are inline because Angular's
+    // emulated view encapsulation does not reach dynamically created nodes.
+    const lineStyle = "position:absolute;display:none;pointer-events:none;z-index:6;";
     this.crossV = document.createElement("div");
     this.crossH = document.createElement("div");
-    this.crossV.className = "chart-crosshair chart-crosshair-v";
-    this.crossH.className = "chart-crosshair chart-crosshair-h";
+    this.crossV.style.cssText = `${lineStyle}top:0;left:0;width:0;height:100%;border-left:1px dashed rgba(154,181,176,0.7);`;
+    this.crossH.style.cssText = `${lineStyle}top:0;left:0;width:100%;height:0;border-top:1px dashed rgba(154,181,176,0.7);`;
     host.style.position = "relative";
     host.append(this.crossV, this.crossH);
     host.addEventListener("mousemove", this.onCrossMove);

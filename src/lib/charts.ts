@@ -127,10 +127,17 @@ abstract class BaseChart {
   private readonly crossH: HTMLDivElement;
   private readonly onCrossMove = (event: MouseEvent): void => {
     const rect = this.crossHost.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    // grid offsets from baseOption: hide the cross outside the plot area
+    if (x < 58 || x > rect.width - 22 || y < 50 || y > rect.height - 67) {
+      this.onCrossOut();
+      return;
+    }
     this.crossV.style.display = "block";
     this.crossH.style.display = "block";
-    this.crossV.style.transform = `translateX(${event.clientX - rect.left}px)`;
-    this.crossH.style.transform = `translateY(${event.clientY - rect.top}px)`;
+    this.crossV.style.transform = `translateX(${x - 58}px)`;
+    this.crossH.style.transform = `translateY(${y - 50}px)`;
   };
   private readonly onCrossOut = (): void => {
     this.crossV.style.display = "none";
@@ -151,11 +158,13 @@ abstract class BaseChart {
     // two plain divs driven by DOM mouse events. The native axisPointer
     // stays 'line' for tooltip values. Styles are inline because Angular's
     // emulated view encapsulation does not reach dynamically created nodes.
+    // The lines are clipped to the plot grid (baseOption grid offsets).
+    const GRID = { left: 58, top: 50, right: 22, bottom: 67 };
     const lineStyle = "position:absolute;display:none;pointer-events:none;z-index:6;";
     this.crossV = document.createElement("div");
     this.crossH = document.createElement("div");
-    this.crossV.style.cssText = `${lineStyle}top:0;left:0;width:0;height:100%;border-left:1px dashed rgba(154,181,176,0.7);`;
-    this.crossH.style.cssText = `${lineStyle}top:0;left:0;width:100%;height:0;border-top:1px dashed rgba(154,181,176,0.7);`;
+    this.crossV.style.cssText = `${lineStyle}top:${GRID.top}px;left:${GRID.left}px;width:0;height:calc(100% - ${GRID.top + GRID.bottom}px);border-left:1px dashed rgba(154,181,176,0.7);`;
+    this.crossH.style.cssText = `${lineStyle}top:${GRID.top}px;left:${GRID.left}px;width:calc(100% - ${GRID.left + GRID.right}px);height:0;border-top:1px dashed rgba(154,181,176,0.7);`;
     host.style.position = "relative";
     host.append(this.crossV, this.crossH);
     host.addEventListener("mousemove", this.onCrossMove);
@@ -274,7 +283,6 @@ export class SignalChart extends BaseChart {
           splitLine: { show: false },
         } as const] : []),
       ],
-      tooltip: { valueFormatter: undefined },
       series: [
         {
           name: "Сигнал",

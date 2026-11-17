@@ -33,6 +33,24 @@ npm run preview
 
 Production-сборка является устанавливаемым PWA. После первого открытия интерфейс, ECharts и архивный анализ работают без сети. Для установки используйте кнопку в верхней панели или штатный пункт Chrome/Edge «Установить приложение». Service worker включается только в production-режиме.
 
+## Публикация и релизы
+
+- **GitHub Pages**: push в `master` автоматически собирает и публикует приложение (workflow `.github/workflows/pages.yml`). Требуется включить Pages в настройках репозитория (Source: GitHub Actions).
+- **Релизы**: тег `v*` запускает `.github/workflows/release.yml`, который прикрепляет к GitHub Release:
+  - `lupin-light-lab-web-<tag>.zip` — статический бандл для любого веб-сервера;
+  - `lupin-coeffs-<platform>.zip/tar.gz` — утилита чтения коэффициентов калибровки для Windows, macOS (intel/arm) и Linux (amd64/arm64);
+  - `lupin-light-lab-src-<tag>.zip` — архив исходников;
+  - `sha256sums.txt` — контрольные суммы.
+
+## Утилита коэффициентов
+
+`tools/lupin-coeffs/` — автономная программа на Go, читает заводскую калибровку LUPIN (делитель яркости lumDiv и множитель) из USB-серийного номера, недоступного браузеру. Запустите один раз и введите значения в поля приложения:
+
+```powershell
+go build -C tools/lupin-coeffs -o lupin-coeffs.exe .
+.\tools\lupin-coeffs\lupin-coeffs.exe
+```
+
 ## Технологии
 
 - **Angular 22.2**, standalone-компоненты, signals и zoneless change detection;

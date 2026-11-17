@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static bundle
+        run: npm run build
+
+      - name: Pack web archive
+        run: |
+          cd dist
+          zip -qr ../lupin-light-lab-web-${{ github.ref_name }}.zip browser
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web
+          path: lupin-light-lab-web-${{ github.ref_name }}.zip
+
+  coeffs:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { goos: windows, goarch: amd64, suffix: windows-amd64.zip, archive: zip }
+          - { goos: darwin, goarch: amd64, suffix: macos-amd64.zip, archive: zip }
+          - { goos: darwin, goarch: arm64, suffix: macos-arm64.zip, archive: zip }
+          - { goos: linux, goarch: amd64, suffix: linux-amd64.tar.gz, archive: tar }
+          - { goos: linux, goarch: arm64, suffix: linux-arm64.tar.gz, archive: tar }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+
+      - name: Build lupin-coeffs (${{ matrix.goos }}/${{ matrix.goarch }})
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        working-directory: tools/lupin-coeffs
+        run: |
+          go build -ldflags="-s -w" -o dist/lupin-coeffs${{ matrix.goos == 'windows' && '.exe' || '' }} .
+          cd dist
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            zip -q ../lupin-coeffs-${{ matrix.suffix }} lupin-coeffs${{ matrix.goos == 'windows' && '.exe' || '' }}
+          else
+            tar -czf ../lupin-coeffs-${{ matrix.suffix }} lupin-coeffs
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coeffs-${{ matrix.suffix }}
+          path: tools/lupin-coeffs/lupin-coeffs-${{ matrix.suffix }}
+
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create source archive
+        run: git archive --format=zip -o lupin-light-lab-src-${{ github.ref_name }}.zip HEAD
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source
+          path: lupin-light-lab-src-${{ github.ref_name }}.zip
+
+  publish:
+    needs: [web, coeffs, source]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Checksums
+        run: sha256sum *.zip *.tar.gz > sha256sums.txt
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            *.zip
+            *.tar.gz
+            sha256sums.txt
+          generate_release_notes: true

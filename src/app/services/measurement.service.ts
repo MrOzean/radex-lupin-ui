@@ -88,12 +88,12 @@ export class MeasurementService implements OnDestroy {
   readonly overlaySpectrum = computed(() => {
     const track = this.overlay();
     if (!track) return null;
-    // The overlay has its own sample rate (6000 Hz in .bpulse); limit by its
-    // own Nyquist, not by the live/demo stream's spectrumLimit.
+    // The overlay keeps its own sample rate (6000 Hz in .bpulse), so limit
+    // the spectrum by its own Nyquist rather than the live/demo stream's.
     const limit = Math.min(this.spectrumMaxFrequency(), track.sampleRate / 2);
     return powerSpectrum(track.samples, track.sampleRate, limit);
   });
-  /** Spectrum x-axis must cover both the live signal and the overlay. */
+  /** The spectrum x-axis must cover both the live signal and the overlay. */
   readonly spectrumChartMax = computed(() => {
     const overlayMax = this.overlaySpectrum()?.at(-1)?.frequency ?? 0;
     return Math.max(this.spectrumLimit(), overlayMax);

@@ -160,9 +160,9 @@
             kind="spectrum"
             title="Спектр пульсаций"
             description="Амплитуда частотных составляющих · легенда кликабельна"
-            [meta]="'дБ · 0–' + measurement.spectrumLimit() + ' Гц'"
+            [meta]="'дБ · 0–' + measurement.spectrumChartMax() + ' Гц'"
             [bins]="measurement.spectrum()"
-            [maxFrequency]="measurement.spectrumLimit()"
+            [maxFrequency]="measurement.spectrumChartMax()"
             [theme]="theme()"
             [overlayBins]="measurement.overlaySpectrum()" />
         } @placeholder {

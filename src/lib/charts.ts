@@ -1,6 +1,7 @@
 import * as echarts from "echarts/core";
 import { BarChart, CandlestickChart, LineChart } from "echarts/charts";
 import {
+  AxisPointerComponent,
   DataZoomInsideComponent,
   DataZoomSliderComponent,
   GridComponent,
@@ -19,6 +20,7 @@ echarts.use([
   GridComponent,
   LegendComponent,
   TooltipComponent,
+  AxisPointerComponent,
   DataZoomInsideComponent,
   DataZoomSliderComponent,
   CanvasRenderer,

@@ -1,4 +1,4 @@
-import * as echarts from "echarts/core";
+﻿import * as echarts from "echarts/core";
 import { BarChart, CandlestickChart, LineChart } from "echarts/charts";
 import {
   AxisPointerComponent,
@@ -87,7 +87,7 @@ function baseOption(xDecimals = 2): EChartsCoreOption {
       backgroundColor: isLightTheme() ? "rgba(255, 255, 255, 0.97)" : "rgba(9, 17, 19, 0.96)",
       borderColor: isLightTheme() ? "#c5d2cb" : "#354640",
       textStyle: { color: isLightTheme() ? "#21332c" : "#e8eeea", fontSize: 11 },
-      axisPointer: { type: "cross", lineStyle: { color: "#61776f" }, crossStyle: { color: "#61776f" } },
+      axisPointer: { type: "line", lineStyle: { color: "#61776f" } },
     },
     dataZoom: [
       {
@@ -123,6 +123,18 @@ abstract class BaseChart {
   private readonly observer: ResizeObserver;
   private resizeFrame: number | null = null;
   private readonly windowResizeListener = (): void => this.scheduleResize();
+  private readonly crossV: HTMLDivElement;
+  private readonly crossH: HTMLDivElement;
+  private readonly onCrossMove = (event: { offsetX: number; offsetY: number }): void => {
+    this.crossV.style.display = "block";
+    this.crossH.style.display = "block";
+    this.crossV.style.transform = `translateX(${event.offsetX}px)`;
+    this.crossH.style.transform = `translateY(${event.offsetY}px)`;
+  };
+  private readonly onCrossOut = (): void => {
+    this.crossV.style.display = "none";
+    this.crossH.style.display = "none";
+  };
 
   constructor(host: HTMLElement, private readonly exportName: string) {
     this.chart = echarts.init(host, undefined, { renderer: "canvas" });
@@ -130,6 +142,19 @@ abstract class BaseChart {
     this.observer.observe(host);
     if (host.parentElement) this.observer.observe(host.parentElement);
     window.addEventListener("resize", this.windowResizeListener, { passive: true });
+
+    // Custom crosshair overlay: ECharts 6.1 lost the built-in 'cross'
+    // axisPointer shape (upstream regression), so we track the cursor with
+    // two plain divs. The native axisPointer stays 'line' for tooltip values.
+    this.crossV = document.createElement("div");
+    this.crossH = document.createElement("div");
+    this.crossV.className = "chart-crosshair chart-crosshair-v";
+    this.crossH.className = "chart-crosshair chart-crosshair-h";
+    host.style.position = "relative";
+    host.append(this.crossV, this.crossH);
+    const zr = this.chart.getZr();
+    zr.on("mousemove", this.onCrossMove);
+    zr.on("globalout", this.onCrossOut);
   }
 
   private scheduleResize(): void {
@@ -152,6 +177,9 @@ abstract class BaseChart {
     this.observer.disconnect();
     window.removeEventListener("resize", this.windowResizeListener);
     if (this.resizeFrame !== null) cancelAnimationFrame(this.resizeFrame);
+    const zr = this.chart.getZr();
+    zr.off("mousemove", this.onCrossMove);
+    zr.off("globalout", this.onCrossOut);
     this.chart.dispose();
   }
 
@@ -219,7 +247,6 @@ export class SignalChart extends BaseChart {
         nameGap: 26,
         min: timeOffset,
         max: timeOffset + windowSeconds,
-        axisPointer: { type: "cross", label: { show: false } },
         axisLabel: { color: COLORS.text, fontSize: 10, formatter: (value: number) => value.toFixed(2) },
         nameTextStyle: { color: COLORS.text, fontSize: 9 },
         axisLine: { lineStyle: { color: isLightTheme() ? "#b8c7bf" : "#354640" } },
@@ -230,7 +257,6 @@ export class SignalChart extends BaseChart {
           type: "value",
           name: unit,
           scale: true,
-          axisPointer: { type: "cross", label: { show: false } },
           axisLabel: { color: COLORS.text, fontSize: 10 },
           nameTextStyle: { color: COLORS.text },
           splitLine: { lineStyle: { color: COLORS.grid } },
@@ -239,7 +265,6 @@ export class SignalChart extends BaseChart {
           type: "value",
           scale: true,
           position: "right",
-          axisPointer: { type: "cross", label: { show: false } },
           axisLabel: { color: COLORS.threshold, fontSize: 10 },
           nameTextStyle: { color: COLORS.threshold },
           splitLine: { show: false },

@@ -1,4 +1,4 @@
-"""Capture official RadexLight getter values together with the raw serial stream.
+﻿"""Capture official RadexLight getter values together with the raw serial stream.
 
 Runs RadexLight under Frida with radex_metrics_hook.js: polls the EsEapData
 RTTI getters once per second (official minimum/maximum/mean/flicker values)
@@ -9,6 +9,7 @@ of official numbers with candidate formulas on the same packets.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import threading
 from datetime import datetime, timezone
@@ -17,7 +18,7 @@ from pathlib import Path
 import frida
 
 ROOT = Path(__file__).resolve().parent
-EXE = Path(r"D:\Apps\radexlight32\radexlight.exe")
+EXE = Path(os.environ.get("RADEXLIGHT_EXE", r"D:\Apps\radexlight32\radexlight.exe"))
 OUTPUT = ROOT / f"official-metrics-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.jsonl"
 
 

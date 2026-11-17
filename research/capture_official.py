@@ -1,8 +1,9 @@
-"""Capture RadexLight serial traffic using Frida without changing the device or drivers."""
+﻿"""Capture RadexLight serial traffic using Frida without changing the device or drivers."""
 
 from __future__ import annotations
 
 import json
+import os
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
@@ -10,7 +11,7 @@ from pathlib import Path
 import frida
 
 ROOT = Path(__file__).resolve().parent
-EXE = Path(r"D:\Apps\radexlight32\radexlight.exe")
+EXE = Path(os.environ.get("RADEXLIGHT_EXE", r"D:\Apps\radexlight32\radexlight.exe"))
 OUTPUT = ROOT / f"official-serial-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.jsonl"
 
 

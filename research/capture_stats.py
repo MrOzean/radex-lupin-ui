@@ -1,4 +1,4 @@
-"""Capture official RadexLight stat getters together with the real serial stream.
+﻿"""Capture official RadexLight stat getters together with the real serial stream.
 
 Runs RadexLight under Frida with radex_stats_hook.js: hooks the EsEapData
 scalar getters (minimum/maximum/mean/flicker variants) and logs the real
@@ -9,6 +9,7 @@ formulas computed on the very same packets.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import threading
 from datetime import datetime, timezone
@@ -17,7 +18,7 @@ from pathlib import Path
 import frida
 
 ROOT = Path(__file__).resolve().parent
-EXE = Path(r"D:\Apps\radexlight32\radexlight.exe")
+EXE = Path(os.environ.get("RADEXLIGHT_EXE", r"D:\Apps\radexlight32\radexlight.exe"))
 OUTPUT = ROOT / f"official-stats-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.jsonl"
 
 

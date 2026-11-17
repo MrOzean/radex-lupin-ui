@@ -1,8 +1,9 @@
-"""Search readable process memory for protocol-related strings not present on disk."""
+﻿"""Search readable process memory for protocol-related strings not present on disk."""
 
 from __future__ import annotations
 
 import ctypes
+import os
 import re
 import sys
 from ctypes import wintypes
@@ -29,7 +30,7 @@ class MEMORY_BASIC_INFORMATION(ctypes.Structure):
 
 def main() -> None:
     pid = int(sys.argv[1])
-    folder = Path(r"D:\Apps\radexlight32")
+    folder = Path(os.environ.get("RADEXLIGHT_DIR", r"D:\Apps\radexlight32"))
     ascii_pattern = re.compile(rb"[\x20-\x7e]{4,}")
     utf16_pattern = re.compile(rb"(?:[\x20-\x7e]\x00){3,}")
     known: set[str] = set()

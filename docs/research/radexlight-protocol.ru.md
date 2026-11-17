@@ -2,7 +2,7 @@
 
 Дата первичного анализа: 2026-11-09  
 Исследуемая версия: **RadexLight 1.18.0.0**, сборка от 2024-04-04  
-Источник: локальная установка `D:\Apps\radexlight32`
+Источник: локальная установка RadexLight 1.18 (32-битная, путь зависит от машины; инструменты ниже ищут её через переменную окружения `RADEXLIGHT_EXE`/`RADEXLIGHT_DIR`, по умолчанию `D:\Apps\radexlight32`).
 
 > Документ разделяет подтверждённые наблюдения и гипотезы. До проверки с реальным прибором этот материал нельзя считать полной спецификацией протокола.
 
@@ -374,9 +374,9 @@ Web Serial API доступен не везде:
 PE32 helper на `pefile` и Capstone:
 
 ```powershell
-python -X utf8 research\pe_xref.py D:\Apps\radexlight32\radexlight.exe 0x7A7698
-python -X utf8 research\pe_xref.py D:\Apps\radexlight32\radexlight.exe --range 0x7A6C28:0x7A6FA0
-python -X utf8 research\pe_xref.py D:\Apps\radexlight32\radexlight.exe --calls 0xBA7290
+python -X utf8 research\pe_xref.py %RADEXLIGHT_EXE% 0x7A7698
+python -X utf8 research\pe_xref.py %RADEXLIGHT_EXE% --range 0x7A6C28:0x7A6FA0
+python -X utf8 research\pe_xref.py %RADEXLIGHT_EXE% --calls 0xBA7290
 ```
 
 Умеет:
@@ -410,21 +410,15 @@ python research\read_process_memory.py <PID> 0x4E34000 0x3000 research\mem-const
 
 Оба process-tool используют только `OpenProcess`, `VirtualQueryEx`/`ReadProcessMemory` и не изменяют память программы.
 
-## 9. Установленный декомпилятор
+## 9. Декомпилятор
 
-Ghidra 12.2 распакован портабельно в:
-
-```text
-D:\Dev_Apps\ghidra_12.2_PUBLIC
-```
-
-Архив проверен по SHA-256 из официального релиза:
+Для анализа ESFWX DLL использовался Ghidra 12.2 (портабельная установка, путь зависит от машины). Архив проверен по SHA-256 из официального релиза:
 
 ```text
 2c2cd776db3c1f6a097ba418922378ac3649cadd5e844a6f5f088ae628a7be67
 ```
 
-Для Ghidra 12.2 используется JDK 25 из `D:\Dev_Apps\jdk-25.0.3+9`.
+Ghidra 12.2 требует JDK 25+.
 
 ## 10. Следующие шаги
 

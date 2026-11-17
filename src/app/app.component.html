@@ -41,6 +41,11 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 11 7-11 7Z"/></svg><span>Вернуться в live</span>
           </button>
         } @else {
+        @if (!measurement.connected() && !measurement.demo.running()) {
+          <button type="button" class="button secondary" (click)="measurement.startDemo()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M7 7l2 2m6 6 2 2m2-10-2 2M9 15l-2 2"/><circle cx="12" cy="12" r="3"/></svg><span>Демо-источник</span>
+          </button>
+        } @else {
           <button type="button" class="button secondary" (click)="measurement.togglePause()">
             @if (measurement.running()) {
               <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1"/></svg><span>Пауза</span>
@@ -52,6 +57,7 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6"/></svg>
             <span>{{ measurement.recordActive() ? 'Остановить запись' : 'Начать запись' }}</span>
           </button>
+        }
         }
       </div>
     </section>

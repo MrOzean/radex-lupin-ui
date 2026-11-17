@@ -87,7 +87,16 @@ export class MeasurementService implements OnDestroy {
   });
   readonly overlaySpectrum = computed(() => {
     const track = this.overlay();
-    return track ? powerSpectrum(track.samples, track.sampleRate, this.spectrumLimit()) : null;
+    if (!track) return null;
+    // The overlay has its own sample rate (6000 Hz in .bpulse); limit by its
+    // own Nyquist, not by the live/demo stream's spectrumLimit.
+    const limit = Math.min(this.spectrumMaxFrequency(), track.sampleRate / 2);
+    return powerSpectrum(track.samples, track.sampleRate, limit);
+  });
+  /** Spectrum x-axis must cover both the live signal and the overlay. */
+  readonly spectrumChartMax = computed(() => {
+    const overlayMax = this.overlaySpectrum()?.at(-1)?.frequency ?? 0;
+    return Math.max(this.spectrumLimit(), overlayMax);
   });
   readonly overlayStats = computed(() => {
     const track = this.overlayTrack();
@@ -180,6 +189,14 @@ export class MeasurementService implements OnDestroy {
       this.running.set(false);
       this.lastPacketAt.set(null);
     });
+  }
+
+  /** Start the built-in virtual light source (explicit user action). */
+  startDemo(): void {
+    if (this.archive() || this.demo.running()) return;
+    this.lastPacketAt.set(null);
+    this.sampleRate.set(2000);
+    this.lowPass = new LowPassFilter(2000);
     this.demo.start();
     this.running.set(true);
   }
@@ -219,9 +236,7 @@ export class MeasurementService implements OnDestroy {
       this.demo.stop();
       this.running.set(false);
     } else {
-      this.demo.start();
-      this.sampleRate.set(2000);
-      this.running.set(true);
+      this.startDemo();
     }
   }
 
@@ -372,10 +387,8 @@ export class MeasurementService implements OnDestroy {
       this.lowPass = new LowPassFilter(6000);
       this.running.set(true);
     } else {
-      this.sampleRate.set(2000);
-      this.lowPass = new LowPassFilter(2000);
-      this.demo.start();
-      this.running.set(true);
+      this.demo.stop();
+      this.running.set(false);
     }
   }
 

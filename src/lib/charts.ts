@@ -207,25 +207,10 @@ export class SignalChart extends BaseChart {
     const signalWindow = samples.length > 1 ? (samples.length - 1) / sampleRate : 0;
     const overlayWindow = overlay ? Math.max(1 / overlay.sampleRate, (overlay.samples.length - 1) / overlay.sampleRate) : 0;
     const windowSeconds = Math.max(1, signalWindow, overlayWindow);
-    const isEmpty = samples.length === 0 && overlayPoints.length === 0;
 
     this.chart.setOption({
       ...baseOption(),
-      graphic: isEmpty
-        ? [{
-            id: "empty-hint",
-            type: "text",
-            left: "center",
-            top: "middle",
-            style: {
-              text: "Нет данных\nПодключите LUPIN или запустите демо-источник",
-              fill: COLORS.text,
-              fontSize: 13,
-              lineHeight: 22,
-              textAlign: "center",
-            },
-          }]
-        : [],
+      graphic: [],
       xAxis: {
         type: "value",
         name: "Время, с",

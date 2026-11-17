@@ -12,6 +12,12 @@ function report(kind, fields) {
   send(Object.assign({ kind }, fields || {}));
 }
 
+function hex(buffer) {
+  if (!buffer) return "";
+  const bytes = new Uint8Array(buffer);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 const exe = Process.getModuleByName("radexlight.exe");
 
 const GETTER_ENTRIES = [
@@ -75,9 +81,20 @@ function hookDispatcher() {
         if (lastRaw.get(this.name) === hex) return;
         lastRaw.set(this.name, hex);
         const vtable = variant.readPointer();
+        // The variant references its payload through a heap pointer at +12;
+        // dump it too so the value offset can be decoded offline.
+        let payloadHex = "";
+        try {
+          const inner = variant.add(12).readPointer();
+          if (!inner.isNull()) {
+            payloadHex = Array.from(new Uint8Array(inner.readByteArray(32)),
+              (b) => b.toString(16).padStart(2, "0")).join("");
+          }
+        } catch (_) {}
         report("property-raw", {
           name: this.name,
           hex,
+          payloadHex,
           vtable: moduleRange(vtable) ? vtable.toString() : "external",
         });
       } catch (_) {}
@@ -111,15 +128,23 @@ for (const [name, entryRva, fldRva] of GETTER_ENTRIES) {
   });
 }
 
-// --- serial open/close logging only (no per-read payload) ---
+// --- serial stream logging ---
+// RadexLight opens the port as "\\?\COM5" via kernelbase (kernel32 forwards),
+// so hook kernelbase only: single real implementation, no double-reporting.
 
 const serialHandles = new Set();
-const kernel32 = Process.getModuleByName("kernel32.dll");
+let serialModule;
+try {
+  serialModule = Process.getModuleByName("kernelbase.dll");
+} catch (_) {
+  serialModule = Process.getModuleByName("kernel32.dll");
+}
+const SERIAL_PATH = /^\\\\[.?]\\COM\d+/i;
 
-Interceptor.attach(kernel32.getExportByName("CreateFileW"), {
+Interceptor.attach(serialModule.getExportByName("CreateFileW"), {
   onEnter(args) {
     this.path = args[0].readUtf16String();
-    this.isSerial = /^(\\\\\.\\)?COM\d+/i.test(this.path || "");
+    this.isSerial = SERIAL_PATH.test(this.path || "");
   },
   onLeave(retval) {
     if (this.isSerial) {
@@ -130,7 +155,33 @@ Interceptor.attach(kernel32.getExportByName("CreateFileW"), {
   },
 });
 
-Interceptor.attach(kernel32.getExportByName("WriteFile"), {
+Interceptor.attach(serialModule.getExportByName("ReadFile"), {
+  onEnter(args) {
+    this.handle = args[0].toString();
+    this.skip = !serialHandles.has(this.handle);
+    if (this.skip) return;
+    this.buffer = args[1];
+    this.countPointer = args[3];
+  },
+  onLeave(retval) {
+    if (this.skip) return;
+    let count = 0;
+    if (!this.countPointer.isNull()) {
+      try {
+        count = this.countPointer.readU32();
+      } catch (_) {}
+    }
+    if (count > 0) {
+      report("read", {
+        handle: this.handle,
+        length: count,
+        hex: hex(this.buffer.readByteArray(count)),
+      });
+    }
+  },
+});
+
+Interceptor.attach(serialModule.getExportByName("WriteFile"), {
   onEnter(args) {
     if (!serialHandles.has(args[0].toString())) return;
     report("write", { handle: args[0].toString(), length: args[2].toUInt32() });

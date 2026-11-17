@@ -158,8 +158,8 @@ abstract class BaseChart {
     this.crossH.style.cssText =
       "position:absolute;display:none;pointer-events:none;z-index:6;" +
       "top:50px;left:58px;width:calc(100% - 80px);height:1px;" +
-      "background-image:linear-gradient(to right, #61776f 0 11px, transparent 11px 21px);" +
-      "background-size:21px 1px;background-repeat:repeat-x;";
+      "background-image:linear-gradient(to right, #61776f 0 4px, transparent 4px 6px);" +
+      "background-size:6px 1px;background-repeat:repeat-x;";
     host.style.position = "relative";
     host.append(this.crossH);
     host.addEventListener("mousemove", this.onCrossMove);

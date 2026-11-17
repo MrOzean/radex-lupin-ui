@@ -32,6 +32,18 @@ test("decodeBpulse extracts UTF-8 comments from newer files", async () => {
   assert.equal(benq.firmware, "1.6");
 });
 
+test("decodeBpulse reads .pulse files (same container, XML claim in official docs is wrong)", async () => {
+  const sun = await decodeBpulse(load("sun.pulse"));
+  assert.equal(sun.samples.length, 6000);
+  assert.equal(sun.device, "2026-01-13 9792");
+  assert.equal(sun.order, 9792);
+  assert.equal(sun.firmware, "2.9");
+  const min = Math.min(...sun.samples);
+  const max = Math.max(...sun.samples);
+  assert.ok(Math.abs(min - 99.29) < 0.05);
+  assert.ok(Math.abs(max - 100.96) < 0.05);
+});
+
 test("decodeBpulse rejects non-bpulse input", async () => {
   await assert.rejects(() => decodeBpulse(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24])), /сигнатур/);
   const wrong = new Uint8Array(64);

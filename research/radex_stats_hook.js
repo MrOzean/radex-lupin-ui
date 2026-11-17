@@ -32,6 +32,7 @@ const GETTER_ENTRIES = [
 const DUMP = new Set([
   "lumDiv", "dataType", "devType", "total",
   "minimum", "maximum", "flickerIntegral", "meanIntegral",
+  "flicker", "illuminance", "luminance",
 ]);
 
 let dispatcherAddress = null;

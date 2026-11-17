@@ -147,7 +147,7 @@
           <app-chart-panel
             kind="signal"
             title="Осциллограмма"
-            description="Колесо — масштаб · перетаскивание — движение · наведение — значения"
+            description="Колесо — масштаб · перетаскивание — движение · наведение — значения · легенда кликабельна"
             [meta]="measurement.sampleRate() + ' Гц · ' + measurement.samples().length + ' точек'"
             [samples]="measurement.samples()"
             [sampleRate]="measurement.sampleRate()"
@@ -159,7 +159,7 @@
           <app-chart-panel
             kind="spectrum"
             title="Спектр пульсаций"
-            description="Амплитуда частотных составляющих · легенда кликабельна"
+            description="Колесо — масштаб · перетаскивание — движение · наведение — значения · легенда кликабельна"
             [meta]="'дБ · 0–' + measurement.spectrumChartMax() + ' Гц'"
             [bins]="measurement.spectrum()"
             [maxFrequency]="measurement.spectrumChartMax()"

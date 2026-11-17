@@ -125,19 +125,22 @@ abstract class BaseChart {
   private readonly windowResizeListener = (): void => this.scheduleResize();
   private readonly crossV: HTMLDivElement;
   private readonly crossH: HTMLDivElement;
-  private readonly onCrossMove = (event: { offsetX: number; offsetY: number }): void => {
+  private readonly onCrossMove = (event: MouseEvent): void => {
+    const rect = this.crossHost.getBoundingClientRect();
     this.crossV.style.display = "block";
     this.crossH.style.display = "block";
-    this.crossV.style.transform = `translateX(${event.offsetX}px)`;
-    this.crossH.style.transform = `translateY(${event.offsetY}px)`;
+    this.crossV.style.transform = `translateX(${event.clientX - rect.left}px)`;
+    this.crossH.style.transform = `translateY(${event.clientY - rect.top}px)`;
   };
   private readonly onCrossOut = (): void => {
     this.crossV.style.display = "none";
     this.crossH.style.display = "none";
   };
+  private readonly crossHost: HTMLElement;
 
   constructor(host: HTMLElement, private readonly exportName: string) {
     this.chart = echarts.init(host, undefined, { renderer: "canvas" });
+    this.crossHost = host;
     this.observer = new ResizeObserver(() => this.scheduleResize());
     this.observer.observe(host);
     if (host.parentElement) this.observer.observe(host.parentElement);
@@ -145,16 +148,16 @@ abstract class BaseChart {
 
     // Custom crosshair overlay: ECharts 6.1 lost the built-in 'cross'
     // axisPointer shape (upstream regression), so we track the cursor with
-    // two plain divs. The native axisPointer stays 'line' for tooltip values.
+    // two plain divs driven by DOM mouse events. The native axisPointer
+    // stays 'line' for tooltip values.
     this.crossV = document.createElement("div");
     this.crossH = document.createElement("div");
     this.crossV.className = "chart-crosshair chart-crosshair-v";
     this.crossH.className = "chart-crosshair chart-crosshair-h";
     host.style.position = "relative";
     host.append(this.crossV, this.crossH);
-    const zr = this.chart.getZr();
-    zr.on("mousemove", this.onCrossMove);
-    zr.on("globalout", this.onCrossOut);
+    host.addEventListener("mousemove", this.onCrossMove);
+    host.addEventListener("mouseleave", this.onCrossOut);
   }
 
   private scheduleResize(): void {
@@ -177,9 +180,8 @@ abstract class BaseChart {
     this.observer.disconnect();
     window.removeEventListener("resize", this.windowResizeListener);
     if (this.resizeFrame !== null) cancelAnimationFrame(this.resizeFrame);
-    const zr = this.chart.getZr();
-    zr.off("mousemove", this.onCrossMove);
-    zr.off("globalout", this.onCrossOut);
+    this.crossHost.removeEventListener("mousemove", this.onCrossMove);
+    this.crossHost.removeEventListener("mouseleave", this.onCrossOut);
     this.chart.dispose();
   }
 

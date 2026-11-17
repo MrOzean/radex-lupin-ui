@@ -123,24 +123,20 @@ abstract class BaseChart {
   private readonly observer: ResizeObserver;
   private resizeFrame: number | null = null;
   private readonly windowResizeListener = (): void => this.scheduleResize();
-  private readonly crossV: HTMLDivElement;
   private readonly crossH: HTMLDivElement;
   private readonly onCrossMove = (event: MouseEvent): void => {
     const rect = this.crossHost.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    // grid offsets from baseOption: hide the cross outside the plot area
+    // grid offsets from baseOption: hide the line outside the plot area
     if (x < 58 || x > rect.width - 22 || y < 50 || y > rect.height - 67) {
       this.onCrossOut();
       return;
     }
-    this.crossV.style.display = "block";
     this.crossH.style.display = "block";
-    this.crossV.style.transform = `translateX(${x - 58}px)`;
     this.crossH.style.transform = `translateY(${y - 50}px)`;
   };
   private readonly onCrossOut = (): void => {
-    this.crossV.style.display = "none";
     this.crossH.style.display = "none";
   };
   private readonly crossHost: HTMLElement;
@@ -153,20 +149,18 @@ abstract class BaseChart {
     if (host.parentElement) this.observer.observe(host.parentElement);
     window.addEventListener("resize", this.windowResizeListener, { passive: true });
 
-    // Custom crosshair overlay: ECharts 6.1 lost the built-in 'cross'
-    // axisPointer shape (upstream regression), so we track the cursor with
-    // two plain divs driven by DOM mouse events. The native axisPointer
-    // stays 'line' for tooltip values. Styles are inline because Angular's
-    // emulated view encapsulation does not reach dynamically created nodes.
-    // The lines are clipped to the plot grid (baseOption grid offsets).
-    const GRID = { left: 58, top: 50, right: 22, bottom: 67 };
-    const lineStyle = "position:absolute;display:none;pointer-events:none;z-index:6;";
-    this.crossV = document.createElement("div");
+    // Custom horizontal cursor line. ECharts 6.1 lost the built-in 'cross'
+    // axisPointer shape (upstream regression); the native axisPointer renders
+    // the vertical line, this div renders the horizontal one. Styles are
+    // inline because Angular's emulated view encapsulation does not reach
+    // dynamically created nodes. The line is clipped to the plot grid.
     this.crossH = document.createElement("div");
-    this.crossV.style.cssText = `${lineStyle}top:${GRID.top}px;left:${GRID.left}px;width:0;height:calc(100% - ${GRID.top + GRID.bottom}px);border-left:1px dashed rgba(154,181,176,0.7);`;
-    this.crossH.style.cssText = `${lineStyle}top:${GRID.top}px;left:${GRID.left}px;width:calc(100% - ${GRID.left + GRID.right}px);height:0;border-top:1px dashed rgba(154,181,176,0.7);`;
+    this.crossH.style.cssText =
+      "position:absolute;display:none;pointer-events:none;z-index:6;" +
+      "top:50px;left:58px;width:calc(100% - 80px);height:0;" +
+      "border-top:1px dashed rgba(154,181,176,0.7);";
     host.style.position = "relative";
-    host.append(this.crossV, this.crossH);
+    host.append(this.crossH);
     host.addEventListener("mousemove", this.onCrossMove);
     host.addEventListener("mouseleave", this.onCrossOut);
   }

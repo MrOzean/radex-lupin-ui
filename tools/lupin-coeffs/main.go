@@ -13,7 +13,7 @@
 //	8  u16   flags
 //	10 u16   country code
 //	12 u32   reserved
-//	16 f32   luminance divisor (lumDiv)
+//	16 f32   luminance divisor (lumDiv): кд/м² = лк / lumDiv
 //	20 f32   default correction multiplier
 //	24 u16   firmware marker (13 => 1.3, 14 => 1.4)
 //
@@ -96,7 +96,7 @@ func main() {
 		fmt.Printf("lumDiv:         %g\n", c.LumDiv)
 		fmt.Printf("multiplier:     %g\n", c.Multiplier)
 		fmt.Printf("firmwareMarker: %d\n", c.FirmwareMarker)
-		fmt.Printf("\nВ приложении введите: пересчёт яркости = %g, множитель = %g\n", c.LumDiv, c.Multiplier)
+		fmt.Printf("\nВ приложении введите: делитель яркости = %g (кд/м² = лк / %g), множитель = %g\n", c.LumDiv, c.LumDiv, c.Multiplier)
 		return
 	}
 	out, _ := json.MarshalIndent(c, "", "  ")

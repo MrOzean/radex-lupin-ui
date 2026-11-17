@@ -46,9 +46,9 @@ export class MeasurementService implements OnDestroy {
   readonly correction = signal(loadNumberSetting("lupin-correction", 1));
   /** Luminance conversion factor recovered from the LUPIN USB serial string (lumDiv). */
   readonly luminanceDivisor = signal(loadNumberSetting("lupin-luminance-divisor", 3.4));
-  /** Combined display scale: correction × (luminance ? luminanceDivisor : 1). */
+  /** Combined display scale: correction / (luminance ? luminanceDivisor : 1). */
   readonly displayScale = computed(() =>
-    this.correction() * (this.measurementType() === "luminance" ? this.luminanceDivisor() : 1));
+    this.correction() / (this.measurementType() === "luminance" ? this.luminanceDivisor() : 1));
   readonly measurementType = signal<MeasurementType>("illuminance");
   readonly lightingProfiles = LIGHTING_PROFILES;
   readonly lightingProfileId = signal(DEFAULT_LIGHTING_PROFILE_ID);

@@ -19,6 +19,8 @@ export class ChartPanelComponent implements OnDestroy {
   readonly maxFrequency = input(0);
   readonly unit = input("лк");
   readonly theme = input<"dark" | "light">("dark");
+  readonly overlay = input<{ samples: SampleArray; label: string } | null>(null);
+  readonly overlayBins = input<readonly SpectrumBin[] | null>(null);
   readonly unitChange = output<"лк" | "кд/м²">();
   readonly expanded = signal(false);
   readonly spectrumView = signal<SpectrumView>("bars");
@@ -34,6 +36,8 @@ export class ChartPanelComponent implements OnDestroy {
       this.maxFrequency();
       this.unit();
       this.theme();
+      this.overlay();
+      this.overlayBins();
       this.render();
     });
     afterNextRender(() => {
@@ -74,9 +78,9 @@ export class ChartPanelComponent implements OnDestroy {
   private render(): void {
     if (!this.chart) return;
     if (this.kind() === "signal" && this.chart instanceof SignalChart) {
-      this.chart.update(this.samples(), this.sampleRate(), this.unit(), this.timeOffset());
+      this.chart.update(this.samples(), this.sampleRate(), this.unit(), this.timeOffset(), this.overlay());
     } else if (this.kind() === "spectrum" && this.chart instanceof SpectrumChart) {
-      this.chart.update(this.bins(), this.maxFrequency());
+      this.chart.update(this.bins(), this.maxFrequency(), this.overlayBins());
     }
   }
 }

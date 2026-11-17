@@ -146,6 +146,20 @@ export class AppComponent {
     }
   }
 
+  async openOverlayFile(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      await this.measurement.loadOverlay(file);
+      this.showToast(`Эталон загружен: ${file.name}`);
+    } catch (error) {
+      this.showToast(errorMessage(error));
+    } finally {
+      input.value = "";
+    }
+  }
+
   closeFile(): void {
     this.measurement.closeFile();
     this.showToast("Возвращён живой режим");

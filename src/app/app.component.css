@@ -108,6 +108,13 @@
 .recording-dot { width: 10px; height: 10px; border: 2px solid #53645f; border-radius: 50%; }
 .recording-dot.active { border-color: #ff8177; background: #ff655b; box-shadow: 0 0 10px rgba(255, 101, 91, .4); animation: pulse 1.5s infinite; }
 .file-note { margin: 12px 2px 0; color: #61756e; font-size: 9px; line-height: 1.5; }
+.overlay-info { display: flex; gap: 10px; align-items: center; margin-top: 12px; padding: 10px 12px; border: 1px solid rgba(154, 181, 176, 0.18); border-radius: 10px; }
+.overlay-info > div { flex: 1; min-width: 0; }
+.overlay-info strong, .overlay-info small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.overlay-info strong { font-size: 11px; margin-bottom: 3px; }
+.overlay-info small { color: var(--muted); font-size: 9px; }
+.overlay-info > span { color: var(--muted); font-size: 9px; white-space: nowrap; }
+.overlay-info .icon-button { flex: none; }
 .browser-note { border: 1px solid rgba(255, 190, 110, .2); background: rgba(255, 190, 110, .05); color: #b7a78d; border-radius: 10px; padding: 14px; font-size: 10px; line-height: 1.6; }
 .browser-note strong { color: #e0c59e; }
 .page-footer { display: flex; justify-content: space-between; gap: 20px; color: #4f625c; font-size: 9px; padding: 24px 2px 0; }

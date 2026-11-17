@@ -1,5 +1,6 @@
 import { computed, inject, Injectable, OnDestroy, signal } from "@angular/core";
 import { dominantFrequencies, powerSpectrum, signalStats, type SampleArray, type SignalStats, type SpectrumBin } from "../../lib/analysis";
+import { decodeBpulse } from "../../lib/bpulse";
 import type { DemoChunk } from "../../lib/demo";
 import { LowPassFilter } from "../../lib/filter";
 import {
@@ -20,6 +21,14 @@ import { SerialService } from "./serial.service";
 
 export interface LoadedMeasurement extends MeasurementFileData {
   fileName: string;
+}
+
+export interface OverlayTrack {
+  fileName: string;
+  samples: Float32Array;
+  sampleRate: number;
+  label: string;
+  detail: string;
 }
 
 export type StreamState = "live" | "waiting" | "stalled" | "paused" | "archive" | "idle";
@@ -65,6 +74,15 @@ export class MeasurementService implements OnDestroy {
   readonly recordSampleRate = signal(2000);
   readonly recordDuration = computed(() => this.recordSampleCount() / this.recordSampleRate());
   readonly archive = signal<LoadedMeasurement | null>(null);
+  readonly overlay = signal<OverlayTrack | null>(null);
+  readonly overlaySpectrum = computed(() => {
+    const track = this.overlay();
+    return track ? powerSpectrum(track.samples, track.sampleRate, this.spectrumLimit()) : null;
+  });
+  readonly overlayStats = computed(() => {
+    const track = this.overlay();
+    return track ? signalStats(track.samples) : null;
+  });
   readonly playbackOffset = signal(0);
   readonly playbackWindowSize = signal(2000);
   readonly playbackDuration = computed(() => (this.archive()?.samples.length ?? 0) / this.sampleRate());
@@ -309,6 +327,26 @@ export class MeasurementService implements OnDestroy {
     this.playbackOffset.set(0);
     this.lowPass = new LowPassFilter(data.header.sampleRate);
     this.renderPlayback();
+  }
+
+  async loadOverlay(file: File): Promise<void> {
+    const data = await decodeBpulse(await file.arrayBuffer());
+    const parts = [
+      data.device,
+      data.firmware && `fw ${data.firmware}`,
+      data.comment,
+    ].filter(Boolean);
+    this.overlay.set({
+      fileName: file.name,
+      samples: data.samples,
+      sampleRate: data.sampleRate,
+      label: file.name.replace(/\.bpulse$/i, ""),
+      detail: parts.join(" · "),
+    });
+  }
+
+  clearOverlay(): void {
+    this.overlay.set(null);
   }
 
   closeFile(): void {

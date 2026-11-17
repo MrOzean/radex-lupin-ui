@@ -148,6 +148,7 @@
             [timeOffset]="measurement.archive() ? measurement.playbackPosition() : 0"
             [unit]="measurement.unit()"
             [theme]="theme()"
+            [overlay]="measurement.overlay() ? { samples: measurement.overlay()!.samples, label: 'Эталон: ' + measurement.overlay()!.label } : null"
             (unitChange)="measurement.setMeasurementType($event === 'лк' ? 'illuminance' : 'luminance')" />
           <app-chart-panel
             kind="spectrum"
@@ -156,7 +157,8 @@
             [meta]="'дБ · 0–' + measurement.spectrumLimit() + ' Гц'"
             [bins]="measurement.spectrum()"
             [maxFrequency]="measurement.spectrumLimit()"
-            [theme]="theme()" />
+            [theme]="theme()"
+            [overlayBins]="measurement.overlaySpectrum()" />
         } @placeholder {
           <div class="panel chart-placeholder" role="status">Загрузка графиков…</div>
         }
@@ -208,6 +210,20 @@
           <button type="button" class="button secondary full" (click)="measurementFile.click()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V4h6l2 3h8v13H4Z"/></svg><span>Открыть запись</span>
           </button>
+          @if (measurement.overlay(); as overlay) {
+            <div class="overlay-info">
+              <div><strong>Эталон: {{ overlay.label }}</strong><small>{{ overlay.detail }}</small></div>
+              @if (measurement.overlayStats(); as stats) {
+                <span>Кп {{ stats.flickerPercent.toFixed(1) }} % · среднее {{ stats.mean.toFixed(1) }}</span>
+              }
+              <button type="button" class="icon-button" aria-label="Убрать эталон" (click)="measurement.clearOverlay()">×</button>
+            </div>
+          } @else {
+            <input #overlayFile type="file" accept=".bpulse" hidden (change)="openOverlayFile($event)" />
+            <button type="button" class="button secondary full" (click)="overlayFile.click()">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 18v3h16v-3"/></svg><span>Эталон из .bpulse</span>
+            </button>
+          }
           <p class="file-note">Файл .lupinlab содержит исходные отсчёты float32 и метаданные. Обработка выполняется локально.</p>
         </article>
         @if (!serial.supported) {

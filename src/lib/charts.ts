@@ -185,11 +185,24 @@ export class SignalChart extends BaseChart {
     super(host, "lupin-signal");
   }
 
-  update(samples: SampleArray, sampleRate: number, unit = "лк", timeOffset = 0): void {
+  update(
+    samples: SampleArray,
+    sampleRate: number,
+    unit = "лк",
+    timeOffset = 0,
+    overlay: { samples: SampleArray; label: string } | null = null,
+  ): void {
     const points: [number, number][] = [];
     for (let i = 0; i < samples.length; i++) points.push([timeOffset + i / sampleRate, samples[i]]);
     const stats = signalStats(samples);
     const average = points.map(([time]) => [time, stats.mean] as [number, number]);
+
+    const overlayPoints: [number, number][] = [];
+    if (overlay) {
+      for (let i = 0; i < overlay.samples.length; i++) {
+        overlayPoints.push([timeOffset + i / sampleRate, overlay.samples[i]]);
+      }
+    }
 
     this.chart.setOption({
       ...baseOption(),
@@ -226,6 +239,17 @@ export class SignalChart extends BaseChart {
           areaStyle: { color: "rgba(200, 247, 107, 0.055)" },
           emphasis: { disabled: true },
         },
+        ...(overlay ? [{
+          name: overlay.label,
+          type: "line",
+          data: overlayPoints,
+          showSymbol: false,
+          sampling: "lttb",
+          lineStyle: { color: COLORS.threshold, width: 1.2 },
+          itemStyle: { color: COLORS.threshold },
+          emphasis: { disabled: true },
+          z: 3,
+        } as const] : []),
         {
           name: "Среднее",
           type: "line",
@@ -250,6 +274,7 @@ export class SpectrumChart extends BaseChart {
   private bins: readonly SpectrumBin[] = [];
   private maxFrequency = 0;
   private view: SpectrumView = "bars";
+  private overlayBins: readonly SpectrumBin[] | null = null;
 
   constructor(host: HTMLElement) {
     super(host, "lupin-spectrum");
@@ -259,17 +284,21 @@ export class SpectrumChart extends BaseChart {
     if (this.view === view) return;
     this.view = view;
     this.chart.clear();
-    this.update(this.bins, this.maxFrequency);
+    this.update(this.bins, this.maxFrequency, this.overlayBins);
   }
 
-  update(bins: readonly SpectrumBin[], maxFrequency = 0): void {
+  update(bins: readonly SpectrumBin[], maxFrequency = 0, overlayBins: readonly SpectrumBin[] | null = null): void {
     this.bins = bins;
     this.maxFrequency = maxFrequency;
+    this.overlayBins = overlayBins;
     const points = bins.map((bin) => [bin.frequency, bin.decibels] as [number, number]);
     const bars = this.view === "bars";
     const valueOffset = bars ? 100 : 0;
     const displayPoints = points.map(([frequency, decibels]) => [frequency, decibels + valueOffset]);
     const threshold = points.map(([frequency]) => [frequency, -40 + valueOffset]);
+    const overlayPoints = overlayBins
+      ? overlayBins.map((bin) => [bin.frequency, bin.decibels + valueOffset] as [number, number])
+      : null;
     const candles = bins.map((bin, index) => {
       const open = bins[index - 1]?.decibels ?? bin.decibels;
       const next = bins[index + 1]?.decibels ?? bin.decibels;
@@ -334,6 +363,16 @@ export class SpectrumChart extends BaseChart {
       },
       series: [
         spectrumSeries,
+        ...(overlayPoints ? [{
+          name: "Оверлей",
+          type: "line",
+          data: overlayPoints,
+          showSymbol: false,
+          lineStyle: { color: COLORS.threshold, width: 1.2 },
+          itemStyle: { color: COLORS.threshold },
+          emphasis: { disabled: true },
+          z: 3,
+        } as const] : []),
         {
           name: "Порог −40 дБ",
           type: "line",

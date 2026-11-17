@@ -33,11 +33,11 @@ const RECORD_ZERO_PREFIX = new Uint8Array([
   0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
   0x03, 0x00, 0x00, 0x00, 0x49, 0x44, 0x58, // "IDX"
 ]);
-const RECORD_VALUE_OFFSET = 51;
+const RECORD_VALUE_OFFSET = 47; // float64 payload ("08 00 00 00" length marker before it)
 const RECORD_STRIDE = 55;
-const RECORD_IDX_BACK_1 = 43;
-const RECORD_IDX_BACK_2 = 24;
-const RECORD_IDX_MARKER_BACK = 31; // "IDX" ends here
+const RECORD_IDX_1 = 8;
+const RECORD_IDX_2 = 27;
+const RECORD_IDX_MARKER = 20; // "IDX" starts here
 
 const textDecoder = new TextDecoder("utf-8");
 const asciiDecoder = new TextDecoder("ascii");
@@ -80,13 +80,12 @@ function readSamples(bytes: Uint8Array, view: DataView): Float32Array {
   let offset = record;
   while (offset + 4 <= bytes.length) {
     const valueOffset = offset + RECORD_VALUE_OFFSET;
-    if (valueOffset + 4 > bytes.length) break; // final record ends right after the value
+    if (valueOffset + 8 > bytes.length) break; // final record ends right after the value
     const index = samples.length;
-    if (view.getUint32(valueOffset - RECORD_IDX_BACK_1, true) !== index) break;
-    if (view.getUint32(valueOffset - RECORD_IDX_BACK_2, true) !== index) break;
-    const markerAt = valueOffset - RECORD_IDX_MARKER_BACK;
-    if (asciiDecoder.decode(bytes.subarray(markerAt, markerAt + 3)) !== "IDX") break;
-    const value = view.getFloat32(valueOffset, true);
+    if (view.getUint32(offset + RECORD_IDX_1, true) !== index) break;
+    if (view.getUint32(offset + RECORD_IDX_2, true) !== index) break;
+    if (asciiDecoder.decode(bytes.subarray(offset + RECORD_IDX_MARKER, offset + RECORD_IDX_MARKER + 3)) !== "IDX") break;
+    const value = view.getFloat64(valueOffset, true);
     if (!Number.isFinite(value) || value < 0) break;
     samples.push(value);
     offset += RECORD_STRIDE;

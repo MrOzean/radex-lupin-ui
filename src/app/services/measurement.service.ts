@@ -75,12 +75,22 @@ export class MeasurementService implements OnDestroy {
   readonly recordDuration = computed(() => this.recordSampleCount() / this.recordSampleRate());
   readonly archive = signal<LoadedMeasurement | null>(null);
   readonly overlay = signal<OverlayTrack | null>(null);
+  /** Overlay samples scaled by the current display units (лк or кд/м²). */
+  readonly overlayTrack = computed(() => {
+    const track = this.overlay();
+    if (!track) return null;
+    const scale = this.displayScale();
+    return {
+      samples: scale === 1 ? track.samples : track.samples.map((value) => value * scale),
+      label: track.label,
+    };
+  });
   readonly overlaySpectrum = computed(() => {
     const track = this.overlay();
     return track ? powerSpectrum(track.samples, track.sampleRate, this.spectrumLimit()) : null;
   });
   readonly overlayStats = computed(() => {
-    const track = this.overlay();
+    const track = this.overlayTrack();
     return track ? signalStats(track.samples) : null;
   });
   readonly playbackOffset = signal(0);

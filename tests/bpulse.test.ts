@@ -21,8 +21,8 @@ test("decodeBpulse reads samples and metadata from original RadexLight files", a
   assert.equal(data.comment, "");
   const min = Math.min(...data.samples);
   const max = Math.max(...data.samples);
-  assert.ok(Math.abs(min - 2.3183167) < 1e-5);
-  assert.ok(Math.abs(max - 3.7816815) < 1e-4);
+  assert.ok(Math.abs(min - 5.094) < 0.01);
+  assert.ok(Math.abs(max - 288.44) < 0.05);
 });
 
 test("decodeBpulse extracts UTF-8 comments from newer files", async () => {

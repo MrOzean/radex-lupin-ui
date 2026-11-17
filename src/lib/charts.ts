@@ -218,14 +218,25 @@ export class SignalChart extends BaseChart {
         axisLine: { lineStyle: { color: isLightTheme() ? "#b8c7bf" : "#354640" } },
         splitLine: { lineStyle: { color: COLORS.grid } },
       },
-      yAxis: {
-        type: "value",
-        name: unit,
-        scale: true,
-        axisLabel: { color: COLORS.text, fontSize: 10 },
-        nameTextStyle: { color: COLORS.text },
-        splitLine: { lineStyle: { color: COLORS.grid } },
-      },
+      yAxis: [
+        {
+          type: "value",
+          name: unit,
+          scale: true,
+          axisLabel: { color: COLORS.text, fontSize: 10 },
+          nameTextStyle: { color: COLORS.text },
+          splitLine: { lineStyle: { color: COLORS.grid } },
+        },
+        ...(overlay ? [{
+          type: "value",
+          name: overlay.label,
+          scale: true,
+          position: "right",
+          axisLabel: { color: COLORS.threshold, fontSize: 10 },
+          nameTextStyle: { color: COLORS.threshold },
+          splitLine: { show: false },
+        } as const] : []),
+      ],
       tooltip: { valueFormatter: undefined },
       series: [
         {
@@ -242,6 +253,7 @@ export class SignalChart extends BaseChart {
         ...(overlay ? [{
           name: overlay.label,
           type: "line",
+          yAxisIndex: 1,
           data: overlayPoints,
           showSymbol: false,
           sampling: "lttb",
@@ -365,11 +377,13 @@ export class SpectrumChart extends BaseChart {
         spectrumSeries,
         ...(overlayPoints ? [{
           name: "Оверлей",
-          type: "line",
+          type: this.view === "bars" ? "bar" : "line",
           data: overlayPoints,
           showSymbol: false,
+          barWidth: "35%",
+          sampling: this.view === "bars" ? undefined : "lttb",
           lineStyle: { color: COLORS.threshold, width: 1.2 },
-          itemStyle: { color: COLORS.threshold },
+          itemStyle: { color: COLORS.threshold, opacity: 0.55 },
           emphasis: { disabled: true },
           z: 3,
         } as const] : []),

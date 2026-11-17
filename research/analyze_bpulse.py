@@ -12,7 +12,8 @@ RECORD_ZERO_PREFIX = bytes.fromhex(
     "08 00 00 00 2f 00 00 00 00 00 00 00 "
     "02 00 00 00 03 00 00 00 49 44 58"
 )
-VALUE_OFFSET = 51
+# The record payload is a float64 ("08 00 00 00" length marker precedes it).
+VALUE_OFFSET = 47
 RECORD_STRIDE = 55
 
 
@@ -32,14 +33,14 @@ def extract(path: Path) -> dict:
     samples: list[float] = []
     value_offset = record + VALUE_OFFSET
     index = 0
-    while value_offset + 4 <= len(data):
+    while value_offset + 8 <= len(data):
         # Every record except the final truncated one carries IDX twice.
-        if value_offset + 4 < len(data):
-            if u32(data, value_offset - 43) != index or u32(data, value_offset - 24) != index:
+        if value_offset + 8 < len(data):
+            if u32(data, value_offset - 39) != index or u32(data, value_offset - 20) != index:
                 raise ValueError(f"Unexpected BPULSE record index at sample {index}")
-            if data[value_offset - 31:value_offset - 28] != b"IDX":
+            if data[value_offset - 27:value_offset - 24] != b"IDX":
                 raise ValueError(f"Unexpected BPULSE record marker at sample {index}")
-        value = struct.unpack_from("<f", data, value_offset)[0]
+        value = struct.unpack_from("<d", data, value_offset)[0]
         if not math.isfinite(value) or value < 0:
             raise ValueError(f"Invalid sample {index}: {value}")
         samples.append(value)
@@ -48,7 +49,7 @@ def extract(path: Path) -> dict:
 
     if not samples:
         raise ValueError("BPULSE contains no samples")
-    packed = struct.pack(f"<{len(samples)}f", *samples)
+    packed = struct.pack(f"<{len(samples)}d", *samples)
     minimum = min(samples)
     maximum = max(samples)
     mean = sum(samples) / len(samples)

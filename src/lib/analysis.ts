@@ -26,7 +26,9 @@ export function signalStats(samples: SampleArray): SignalStats {
     sum += sample;
   }
   const mean = sum / samples.length;
-  const flickerPercent = mean === 0 ? 0 : ((maximum - minimum) / mean) * 100;
+  // ГОСТ-style flicker coefficient: Кп = (max − min) / (2·mean)·100 %,
+  // matching RadexLight's flickerArithmetic/flickerIntegral pair.
+  const flickerPercent = mean === 0 ? 0 : ((maximum - minimum) / (2 * mean)) * 100;
   return { minimum, maximum, mean, flickerPercent };
 }
 

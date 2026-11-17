@@ -214,7 +214,7 @@
           }
           <input #measurementFile type="file" accept=".lupinlab,application/octet-stream" hidden (change)="openMeasurementFile($event)" />
           <button type="button" class="button secondary full" (click)="measurementFile.click()">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V4h6l2 3h8v13H4Z"/></svg><span>Открыть запись</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V4h6l2 3h8v13H4Z"/></svg><span>Открыть .lupinlab</span>
           </button>
           @if (measurement.overlay(); as overlay) {
             <div class="overlay-info">
@@ -227,7 +227,7 @@
           } @else {
             <input #overlayFile type="file" accept=".bpulse,.pulse" hidden (change)="openOverlayFile($event)" />
             <button type="button" class="button secondary full" (click)="overlayFile.click()">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 18v3h16v-3"/></svg><span>Эталон из .bpulse/.pulse</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5" opacity="0.55"/></svg><span>Открыть .pulse/.bpulse</span>
             </button>
           }
           <p class="file-note">Файл .lupinlab содержит исходные отсчёты float32 и метаданные. Обработка выполняется локально.</p>

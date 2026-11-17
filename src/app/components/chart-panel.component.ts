@@ -19,7 +19,7 @@ export class ChartPanelComponent implements OnDestroy {
   readonly maxFrequency = input(0);
   readonly unit = input("лк");
   readonly theme = input<"dark" | "light">("dark");
-  readonly overlay = input<{ samples: SampleArray; label: string } | null>(null);
+  readonly overlay = input<{ samples: SampleArray; label: string; sampleRate: number } | null>(null);
   readonly overlayBins = input<readonly SpectrumBin[] | null>(null);
   readonly unitChange = output<"лк" | "кд/м²">();
   readonly expanded = signal(false);

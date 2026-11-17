@@ -190,7 +190,7 @@ export class SignalChart extends BaseChart {
     sampleRate: number,
     unit = "лк",
     timeOffset = 0,
-    overlay: { samples: SampleArray; label: string } | null = null,
+    overlay: { samples: SampleArray; label: string; sampleRate: number } | null = null,
   ): void {
     const points: [number, number][] = [];
     for (let i = 0; i < samples.length; i++) points.push([timeOffset + i / sampleRate, samples[i]]);
@@ -200,19 +200,39 @@ export class SignalChart extends BaseChart {
     const overlayPoints: [number, number][] = [];
     if (overlay) {
       for (let i = 0; i < overlay.samples.length; i++) {
-        overlayPoints.push([timeOffset + i / sampleRate, overlay.samples[i]]);
+        overlayPoints.push([timeOffset + i / overlay.sampleRate, overlay.samples[i]]);
       }
     }
 
+    const signalWindow = samples.length > 1 ? (samples.length - 1) / sampleRate : 0;
+    const overlayWindow = overlay ? Math.max(1 / overlay.sampleRate, (overlay.samples.length - 1) / overlay.sampleRate) : 0;
+    const windowSeconds = Math.max(1, signalWindow, overlayWindow);
+    const isEmpty = samples.length === 0 && overlayPoints.length === 0;
+
     this.chart.setOption({
       ...baseOption(),
+      graphic: isEmpty
+        ? [{
+            id: "empty-hint",
+            type: "text",
+            left: "center",
+            top: "middle",
+            style: {
+              text: "Нет данных\nПодключите LUPIN или запустите демо-источник",
+              fill: COLORS.text,
+              fontSize: 13,
+              lineHeight: 22,
+              textAlign: "center",
+            },
+          }]
+        : [],
       xAxis: {
         type: "value",
         name: "Время, с",
         nameLocation: "middle",
         nameGap: 26,
         min: timeOffset,
-        max: timeOffset + Math.max(1 / sampleRate, (samples.length - 1) / sampleRate),
+        max: timeOffset + windowSeconds,
         axisLabel: { color: COLORS.text, fontSize: 10, formatter: (value: number) => value.toFixed(2) },
         nameTextStyle: { color: COLORS.text, fontSize: 9 },
         axisLine: { lineStyle: { color: isLightTheme() ? "#b8c7bf" : "#354640" } },

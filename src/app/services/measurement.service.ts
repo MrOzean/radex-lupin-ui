@@ -83,6 +83,7 @@ export class MeasurementService implements OnDestroy {
     return {
       samples: scale === 1 ? track.samples : track.samples.map((value) => value * scale),
       label: track.label,
+      sampleRate: track.sampleRate,
     };
   });
   readonly overlaySpectrum = computed(() => {

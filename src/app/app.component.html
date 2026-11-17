@@ -154,7 +154,7 @@
             [timeOffset]="measurement.archive() ? measurement.playbackPosition() : 0"
             [unit]="measurement.unit()"
             [theme]="theme()"
-            [overlay]="measurement.overlayTrack() ? { samples: measurement.overlayTrack()!.samples, label: 'Эталон: ' + measurement.overlayTrack()!.label } : null"
+            [overlay]="measurement.overlayTrack()"
             (unitChange)="measurement.setMeasurementType($event === 'лк' ? 'illuminance' : 'luminance')" />
           <app-chart-panel
             kind="spectrum"

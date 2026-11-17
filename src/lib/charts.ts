@@ -234,7 +234,6 @@ export class SignalChart extends BaseChart {
         },
         ...(overlay ? [{
           type: "value",
-          name: overlay.label,
           scale: true,
           position: "right",
           axisLabel: { color: COLORS.threshold, fontSize: 10 },
@@ -291,7 +290,7 @@ export class SpectrumChart extends BaseChart {
   private bins: readonly SpectrumBin[] = [];
   private maxFrequency = 0;
   private view: SpectrumView = "bars";
-  private overlayBins: readonly SpectrumBin[] | null = null;
+  private overlay: { bins: readonly SpectrumBin[]; label: string } | null = null;
 
   constructor(host: HTMLElement) {
     super(host, "lupin-spectrum");
@@ -301,20 +300,20 @@ export class SpectrumChart extends BaseChart {
     if (this.view === view) return;
     this.view = view;
     this.chart.clear();
-    this.update(this.bins, this.maxFrequency, this.overlayBins);
+    this.update(this.bins, this.maxFrequency, this.overlay);
   }
 
-  update(bins: readonly SpectrumBin[], maxFrequency = 0, overlayBins: readonly SpectrumBin[] | null = null): void {
+  update(bins: readonly SpectrumBin[], maxFrequency = 0, overlay: { bins: readonly SpectrumBin[]; label: string } | null = null): void {
     this.bins = bins;
     this.maxFrequency = maxFrequency;
-    this.overlayBins = overlayBins;
+    this.overlay = overlay;
     const points = bins.map((bin) => [bin.frequency, bin.decibels] as [number, number]);
     const bars = this.view === "bars";
     const valueOffset = bars ? 100 : 0;
     const displayPoints = points.map(([frequency, decibels]) => [frequency, decibels + valueOffset]);
     const threshold = points.map(([frequency]) => [frequency, -40 + valueOffset]);
-    const overlayPoints = overlayBins
-      ? overlayBins.map((bin) => [bin.frequency, bin.decibels + valueOffset] as [number, number])
+    const overlayPoints = overlay
+      ? overlay.bins.map((bin) => [bin.frequency, bin.decibels + valueOffset] as [number, number])
       : null;
     const candles = bins.map((bin, index) => {
       const open = bins[index - 1]?.decibels ?? bin.decibels;
@@ -381,7 +380,7 @@ export class SpectrumChart extends BaseChart {
       series: [
         spectrumSeries,
         ...(overlayPoints ? [{
-          name: "Оверлей",
+          name: overlay!.label,
           type: this.view === "bars" ? "bar" : "line",
           data: overlayPoints,
           showSymbol: false,

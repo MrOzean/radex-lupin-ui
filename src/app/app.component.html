@@ -164,7 +164,7 @@
             [bins]="measurement.spectrum()"
             [maxFrequency]="measurement.spectrumChartMax()"
             [theme]="theme()"
-            [overlayBins]="measurement.overlaySpectrum()" />
+            [overlayBins]="measurement.overlayTrack() && measurement.overlaySpectrum() ? { bins: measurement.overlaySpectrum()!, label: measurement.overlayTrack()!.label } : null" />
         } @placeholder {
           <div class="panel chart-placeholder" role="status">Загрузка графиков…</div>
         }

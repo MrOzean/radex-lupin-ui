@@ -20,7 +20,7 @@ export class ChartPanelComponent implements OnDestroy {
   readonly unit = input("лк");
   readonly theme = input<"dark" | "light">("dark");
   readonly overlay = input<{ samples: SampleArray; label: string; sampleRate: number } | null>(null);
-  readonly overlayBins = input<readonly SpectrumBin[] | null>(null);
+  readonly overlayBins = input<{ bins: readonly SpectrumBin[]; label: string } | null>(null);
   readonly unitChange = output<"лк" | "кд/м²">();
   readonly expanded = signal(false);
   readonly spectrumView = signal<SpectrumView>("bars");
@@ -80,7 +80,7 @@ export class ChartPanelComponent implements OnDestroy {
     if (this.kind() === "signal" && this.chart instanceof SignalChart) {
       this.chart.update(this.samples(), this.sampleRate(), this.unit(), this.timeOffset(), this.overlay());
     } else if (this.kind() === "spectrum" && this.chart instanceof SpectrumChart) {
-      this.chart.update(this.bins(), this.maxFrequency(), this.overlayBins());
+      this.chart.update(this.bins(), this.maxFrequency(), this.overlayBins() ? { bins: this.overlayBins()!.bins, label: this.overlayBins()!.label } : null);
     }
   }
 }

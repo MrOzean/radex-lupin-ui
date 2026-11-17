@@ -82,7 +82,7 @@ export class MeasurementService implements OnDestroy {
     const scale = this.displayScale();
     return {
       samples: scale === 1 ? track.samples : track.samples.map((value) => value * scale),
-      label: track.label,
+      label: `Эталон: ${track.label}`,
       sampleRate: track.sampleRate,
     };
   });

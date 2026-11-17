@@ -212,7 +212,6 @@ export class SignalChart extends BaseChart {
 
     this.chart.setOption({
       ...baseOption(),
-      graphic: [],
       xAxis: {
         type: "value",
         name: "Время, с",
